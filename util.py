@@ -1,9 +1,10 @@
 from tqdm import tqdm
 import random 
+import os
 
 import torch
 
-from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification
+from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, BertForNextSentencePrediction
 from pytorch_pretrained_bert.optimization import BertAdam
 
 
@@ -12,6 +13,8 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     if model_type == "BertForSequenceClassification":
         model = BertForSequenceClassification.from_pretrained('bert-base-chinese')
         # Load pre-trained model tokenizer (vocabulary)
+    elif model_type == "BertForNextSentencePrediction":
+           model = BertForNextSentencePrediction.from_pretrained('bert-base-chinese')
     else:
         print("[Error]: unsupported model type")
         return None, None
@@ -21,13 +24,12 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     return model, tokenizer
 
 
-def load_data(data_path, data_name, batch_size, split="train", device="cuda"):
+def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda"):
     f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
     test_batch, testid_batch, mask_batch, label_batch = [], [], [], []
     data_set = []
     for l in f:
         label, a, b = l.replace("\n", "").split("\t")
-        labels.append(int(label))
         a_index = tokenize_index(a, tokenizer)
         b_index = tokenize_index(b, tokenizer)
         combine_index = a_index + b_index
@@ -56,10 +58,10 @@ def load_data(data_path, data_name, batch_size, split="train", device="cuda"):
     
     return data_set
 
-def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs):
+def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs, data_size):
     param_optimizer = list(model.named_parameters())
     no_decay = ['bias', 'gamma', 'beta']
-    num_train_steps = len(train_data_set) * num_train_epochs
+    num_train_steps = data_size * num_train_epochs
     optimizer_grouped_parameters = [
         {'params': [p for n, p in param_optimizer if n not in no_decay], 'weight_decay_rate': 0.01},
         {'params': [p for n, p in param_optimizer if n in no_decay], 'weight_decay_rate': 0.0}
