@@ -32,7 +32,7 @@ def train(args):
             model.zero_grad()
             global_step += 1
         
-        acc_dev, p1_dev = test(args, split="dev", model=model, tokenizer=tokenizer)
+        acc_dev, p1_dev = test(args, split="validate", model=model, tokenizer=tokenizer)
         print("[dev]: loss: {} acc: {}, p@1: {}".format(tr_loss, acc_dev, p1_dev))
         acc_test, p1_test = test(args, split="test", model=model)
         print("[test]: loss: {} acc: {}, p@1: {}".format(tr_loss, acc_test, p1_test))
