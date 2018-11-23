@@ -11,16 +11,18 @@ from util import *
 
 def train(args):
     model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
-    train_data_set = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
-    optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, len(train_data_set))
+    train_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
+    validate_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "validate", args.device)
+    test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
+    optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, len(train_dataset))
     
     model.train()
     global_step = 0
     best_score = 0
     for epoch in range(1, args.num_train_epochs+1):
         tr_loss = 0
-        random.shuffle(train_data_set)
-        for step, batch in enumerate(tqdm(train_data_set)):
+        random.shuffle(train_dataset)
+        for step, batch in enumerate(tqdm(train_dataset)):
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
             if args.model_type == "BertForNextSentencePrediction" or args.model_type == "BertForQuestionAnswering":
                 loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
@@ -32,9 +34,9 @@ def train(args):
             model.zero_grad()
             global_step += 1
         
-        acc_dev, p1_dev = test(args, split="validate", model=model, tokenizer=tokenizer)
+        acc_dev, p1_dev = test(args, split="validate", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
         print("[dev]: loss: {} acc: {}, p@1: {}".format(tr_loss, acc_dev, p1_dev))
-        acc_test, p1_test = test(args, split="test", model=model)
+        acc_test, p1_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
         print("[test]: loss: {} acc: {}, p@1: {}".format(tr_loss, acc_test, p1_test))
         
         if p1_dev > best_score:
@@ -47,18 +49,19 @@ def train(args):
     acc_test, p1_test = test(args, split="test")
     print("[test]: acc: {}, p@1: {}".format(acc_test, p1_test))
 
-def test(args, split="test", model=None, tokenizer=None):
+def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
         model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
         print("Load PyTorch model from {}".format(model_path))
         model = torch.load(model_path)
     if tokenizer is None:
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
+    if test_dataset is None: 
+        print("Load test set")
+        test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device)
     
     model.eval()
-    test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device)
     prediction_score_list, prediction_index_list, labels = [], [], []
-    
     for tokens_tensor, segments_tensor, mask_tensor, label_tensor in test_dataset:
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         predicted_index = list(torch.argmax(predictions, dim=1).cpu().numpy())
@@ -66,9 +69,14 @@ def test(args, split="test", model=None, tokenizer=None):
         predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
         labels.extend(list(label_tensor.cpu().detach().numpy()))
-    
+        
+        del predictions
+
     acc = get_acc(prediction_index_list, labels)
-    p1 = get_p1(prediction_score_list, labels, args.data_path, args.data_name, args.split)
+    p1 = get_p1(prediction_score_list, labels, args.data_path, args.data_name, split)
+    
+    torch.cuda.empty_cache()
+
     return acc, p1
 
 if __name__ == '__main__':

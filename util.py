@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import random 
 import os
+import numpy as np
 
 import torch
 
@@ -87,16 +88,16 @@ def get_acc(prediction_index_list, labels):
 def get_p1(prediction_score_list, labels, data_path, data_name, split):
     f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
     a2score_label = {}
-    for line, p, s in zip(f, prediction_score_list, labels):
+    for line, p, l in zip(f, prediction_score_list, labels):
         label, a, b = line.replace("\n", "").split("\t")
         if a not in a2score_label:
             a2score_label[a] = []
-        a2score_label[a].append((p, s))
+        a2score_label[a].append((p, l))
     
     acc = 0
     for a in a2score_label:
-        a2score_label[a] = sorted(a2score_label[a], key=lambda x: x[1], reverse=True)
-        if a2score_label[a][0][0] > 0:
+        a2score_label[a] = sorted(a2score_label[a], key=lambda x: x[0], reverse=True)
+        if a2score_label[a][0][1] > 0:
             acc += 1
             
     p1 = acc / len(a2score_label)
