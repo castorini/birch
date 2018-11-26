@@ -95,11 +95,14 @@ def get_p1(prediction_score_list, labels, data_path, data_name, split):
         a2score_label[a].append((p, l))
     
     acc = 0
+    no_true = 0
     for a in a2score_label:
         a2score_label[a] = sorted(a2score_label[a], key=lambda x: x[0], reverse=True)
         if a2score_label[a][0][1] > 0:
             acc += 1
-            
-    p1 = acc / len(a2score_label)
+        if sum([tmp[1] for tmp in a2score_label[a]]) == 0:
+            no_true += 1
+
+    p1 = acc / (len(a2score_label) - no_true)
     
     return p1
