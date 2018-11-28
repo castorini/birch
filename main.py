@@ -47,23 +47,29 @@ def train(args):
         print("[train] loss: {}".format(tr_loss))
         best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score)
 
-    acc_test, p1_test = test(args, split="test")
-    print("[test]: acc: {}, p@1: {}".format(acc_test, p1_test))
+    scores = test(args, split="test")
+    print_scores(scores)
 
 def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score):
-    print("")
-    acc_dev, p1_dev, pre_dev, rec_dev, f1_dev = test(args, split="validate", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
-    print("[dev] acc: {}, p@1: {}, precision: {}, recall: {}, f1: {}".format(acc_dev, p1_dev, pre_dev, rec_dev, f1_dev))
-    acc_test, p1_test, pre_test, rec_test, f1_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
-    print("[test] acc: {}, p@1: {}, precision: {}, recall: {}, f1: {}".format(acc_test, p1_test, pre_test, rec_test, f1_test))
+    scores_dev = test(args, split="validate", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
+    print_scores(scores_dev, mode="dev")
+    scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
+    print_scores(scores_test)
     
-    if acc_dev > best_score:
-        best_score = acc_dev
+    if scores_dev[1][0] > best_score:
+        best_score = scores_dev[1][0]
         # Save pytorch-model
         print("Save PyTorch model to {}".format(model_path))
         torch.save(model.state_dict(), model_path)
 
     return best_score
+
+def print_scores(scores, mode="test"):
+    print("")
+    print("[{}] ".format(mode), end="")
+    for sn, score in zip(scores[0], scores[1]):
+        print("{}: {}".format(sn, score), end=" ")
+    print("")
 
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
@@ -94,7 +100,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     torch.cuda.empty_cache()
     model.train()
     
-    return acc, p1, pre, rec, f1
+    return [["acc", "p@1", "precision", "recall", "f1"], [acc, p1, pre, rec, f1]]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -114,5 +120,5 @@ if __name__ == '__main__':
     if args.mode == "train":
         train(args)
     else:
-        acc_test, p1_test = test(args)
-        print("[test]: acc: {}, p@1: {}".format(acc_test, p1_test))
+        scores = test(args)
+        print_scores(scores)
