@@ -15,6 +15,7 @@ def train(args):
     validate_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "validate", args.device)
     test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, len(train_dataset))
+    model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
     
     model.train()
     global_step = 0
@@ -33,29 +34,37 @@ def train(args):
             optimizer.step()
             model.zero_grad()
             global_step += 1
-        
-        acc_dev, p1_dev = test(args, split="validate", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
-        print("[dev]: loss: {} acc: {}, p@1: {}".format(tr_loss, acc_dev, p1_dev))
-        acc_test, p1_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
-        print("[test]: loss: {} acc: {}, p@1: {}".format(tr_loss, acc_test, p1_test))
-        
-        if p1_dev > best_score:
-            best_score = p1_dev
-            # Save pytorch-model
-            model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
-            print("Save PyTorch model to {}".format(model_path))
-            torch.save(model.state_dict(), model_path)
+            
+            if args.eval_steps > 0 and step % args.eval_steps == 0:
+                best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score)
+
+        print("[train] loss: {}".format(tr_loss))
+        best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score)
 
     acc_test, p1_test = test(args, split="test")
     print("[test]: acc: {}, p@1: {}".format(acc_test, p1_test))
+
+def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score):
+    print("")
+    acc_dev, p1_dev, pre_dev, rec_dev, f1_dev = test(args, split="validate", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
+    print("[dev] acc: {}, p@1: {}, precision: {}, recall: {}, f1: {}".format(acc_dev, p1_dev, pre_dev, rec_dev, f1_dev))
+    acc_test, p1_test, pre_test, rec_test, f1_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
+    print("[test] acc: {}, p@1: {}, precision: {}, recall: {}, f1: {}".format(acc_test, p1_test, pre_test, rec_test, f1_test))
+    
+    if acc_dev > best_score:
+        best_score = acc_dev
+        # Save pytorch-model
+        print("Save PyTorch model to {}".format(model_path))
+        torch.save(model.state_dict(), model_path)
+
+    return best_score
 
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
         model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
         print("Load PyTorch model from {}".format(model_path))
-        model = torch.load(model_path)
-    if tokenizer is None:
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
+        model.load_state_dict(torch.load(model_path))
     if test_dataset is None: 
         print("Load test set")
         test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device)
@@ -74,21 +83,24 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
 
     acc = get_acc(prediction_index_list, labels)
     p1 = get_p1(prediction_score_list, labels, args.data_path, args.data_name, split)
-    
-    torch.cuda.empty_cache()
+    pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
 
-    return acc, p1
+    torch.cuda.empty_cache()
+    model.train()
+    
+    return acc, p1, pre, rec, f1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', default='train', help='[train, test]')
     parser.add_argument('--device', default='cuda', help='[cuda, cpu]')
     parser.add_argument('--batch_size', default=16, type=int, help='[1, 8, 16, 32]')
-    parser.add_argument('--learning_rate', default=5e-5, type=float, help='')
+    parser.add_argument('--learning_rate', default=1e-5, type=float, help='')
     parser.add_argument('--num_train_epochs', default=3, type=int, help='')
     parser.add_argument('--data_path', default='/data/wyang/ShortTextSemanticSimilarity/data/corpora/', help='')
     parser.add_argument('--data_name', default='annotation', help='annotation or youzan_new')
     parser.add_argument('--pytorch_dump_path', default='model/', help='')
+    parser.add_argument('--eval_steps', default=-1, type=int, help='evaluation per [eval_steps] steps, -1 for evaluation per epoch')
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
     parser.add_argument('--warmup_proportion', default=0.1, type=float, help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()
