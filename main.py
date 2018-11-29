@@ -16,7 +16,10 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(RANDOM_SEED)
 
 def train(args):
-    model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
+    if args.load_trained:
+        model, tokenizer = load_trained(args)
+    else:
+        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
     train_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
     validate_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "validate", args.device)
     test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
@@ -71,12 +74,16 @@ def print_scores(scores, mode="test"):
         print("{}: {}".format(sn, score), end=" ")
     print("")
 
+def load_trained(args):
+    model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
+    print("Load PyTorch model from {}".format(model_path))
+    model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
+    model.load_state_dict(torch.load(model_path))
+    return model, tokenizer
+
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
-        model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
-        print("Load PyTorch model from {}".format(model_path))
-        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
-        model.load_state_dict(torch.load(model_path))
+        model, tokenizer = load_trained(args)
     if test_dataset is None: 
         print("Load test set")
         test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device)
@@ -112,6 +119,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', default='/data/wyang/ShortTextSemanticSimilarity/data/corpora/', help='')
     parser.add_argument('--data_name', default='annotation', help='annotation or youzan_new')
     parser.add_argument('--pytorch_dump_path', default='model/', help='')
+    parser.add_argument('--load_trained', action='store_true', default=False, help='')
     parser.add_argument('--eval_steps', default=-1, type=int, help='evaluation per [eval_steps] steps, -1 for evaluation per epoch')
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
     parser.add_argument('--warmup_proportion', default=0.1, type=float, help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')

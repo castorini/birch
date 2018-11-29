@@ -99,9 +99,9 @@ def get_pre_rec_f1(prediction_index_list, labels):
             else:
                 fn += 1
     eps = 1e-8
-    precision = tp * 1.0 / (tp + fp)
-    recall = tp * 1.0 / (tp + fn)
-    f1 = 2 * precision * recall / (precision + recall)
+    precision = tp * 1.0 / (tp + fp + eps)
+    recall = tp * 1.0 / (tp + fn + eps)
+    f1 = 2 * precision * recall / (precision + recall + eps)
     return precision, recall, f1
 
 def get_p1(prediction_score_list, labels, data_path, data_name, split):
