@@ -90,6 +90,8 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
+    f = open(args.output_path, "w")
+    lineno = 1
     for tokens_tensor, segments_tensor, mask_tensor, label_tensor in test_dataset:
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         predicted_index = list(torch.argmax(predictions, dim=1).cpu().numpy())
@@ -97,9 +99,12 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
         labels.extend(list(label_tensor.cpu().detach().numpy()))
-        
+        for p in predicted_index:
+            f.write("{}\t{}\n".format(lineno, p))
+            lineno += 1
         del predictions
-
+    
+    f.close()
     acc = get_acc(prediction_index_list, labels)
     p1 = get_p1(prediction_score_list, labels, args.data_path, args.data_name, split)
     pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
@@ -122,6 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_trained', action='store_true', default=False, help='')
     parser.add_argument('--eval_steps', default=-1, type=int, help='evaluation per [eval_steps] steps, -1 for evaluation per epoch')
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
+    parser.add_argument('--output_path', default='prediction.tmp', help='')
     parser.add_argument('--warmup_proportion', default=0.1, type=float, help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()
     
