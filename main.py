@@ -17,14 +17,13 @@ if torch.cuda.is_available():
 
 def train(args):
     if args.load_trained:
-        model, tokenizer = load_trained(args)
+        epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path) 
     else:
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
     train_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
     validate_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "validate", args.device)
     test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, len(train_dataset))
-    model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
     
     model.train()
     global_step = 0
@@ -45,15 +44,15 @@ def train(args):
             global_step += 1
             
             if args.eval_steps > 0 and step % args.eval_steps == 0:
-                best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score)
+                best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, args.model_type)
 
         print("[train] loss: {}".format(tr_loss))
-        best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score)
+        best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, args.model_type)
 
     scores = test(args, split="test")
     print_scores(scores)
 
-def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score):
+def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch):
     scores_dev = test(args, split="validate", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
     print_scores(scores_dev, mode="dev")
     scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
@@ -63,7 +62,7 @@ def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, be
         best_score = scores_dev[1][0]
         # Save pytorch-model
         print("Save PyTorch model to {}".format(model_path))
-        torch.save(model.state_dict(), model_path)
+    save_checkpoint(epoch, arch, model, tokenizer, scores_dev, model_path)
 
     return best_score
 
@@ -74,16 +73,27 @@ def print_scores(scores, mode="test"):
         print("{}: {}".format(sn, score), end=" ")
     print("")
 
-def load_trained(args):
-    model_path = os.path.join(args.pytorch_dump_path, "{}_finetuned.pt".format(args.data_name))
-    print("Load PyTorch model from {}".format(model_path))
-    model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
-    model.load_state_dict(torch.load(model_path))
-    return model, tokenizer
+def save_checkpoint(epoch, arch, model, tokenizer, scores, filename):
+    for k, tensor in model.items():
+        model[k] = tensor.cpu()
+
+    state = {
+        'epoch': epoch,
+        'arch': arch,
+        'model': model,
+        'tokenizer': tokenizer, 
+        'scores': scores
+    }
+    torch.save(state, filename)
+
+def load_checkpoint(filename):
+    print("Load PyTorch model from {}".format(filename))
+    state = torch.load(filename)
+    return state['epoch'], state['arch'], state['model'], state['tokenizer'], state['scores']
 
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
-        model, tokenizer = load_trained(args)
+        epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
     if test_dataset is None: 
         print("Load test set")
         test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device)
@@ -123,7 +133,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_train_epochs', default=3, type=int, help='')
     parser.add_argument('--data_path', default='/data/wyang/ShortTextSemanticSimilarity/data/corpora/', help='')
     parser.add_argument('--data_name', default='annotation', help='annotation or youzan_new')
-    parser.add_argument('--pytorch_dump_path', default='model/', help='')
+    parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
     parser.add_argument('--load_trained', action='store_true', default=False, help='')
     parser.add_argument('--eval_steps', default=-1, type=int, help='evaluation per [eval_steps] steps, -1 for evaluation per epoch')
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
