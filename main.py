@@ -74,9 +74,6 @@ def print_scores(scores, mode="test"):
     print("")
 
 def save_checkpoint(epoch, arch, model, tokenizer, scores, filename):
-    for k, tensor in model.items():
-        model[k] = tensor.cpu()
-
     state = {
         'epoch': epoch,
         'arch': arch,
