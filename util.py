@@ -9,60 +9,107 @@ from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, B
 from pytorch_pretrained_bert.optimization import BertAdam
 
 
-def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", device="cuda"):
+def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", device="cuda", chinese=False):
     # Load pre-trained model (weights)
+    if chinese:
+        base_model = "bert-base-chinese"
+    else:
+        base_model = "bert-base-uncased"
     if model_type == "BertForSequenceClassification":
-        model = BertForSequenceClassification.from_pretrained('bert-base-chinese')
+        model = BertForSequenceClassification.from_pretrained(base_model)
         # Load pre-trained model tokenizer (vocabulary)
     elif model_type == "BertForNextSentencePrediction":
-           model = BertForNextSentencePrediction.from_pretrained('bert-base-chinese')
+        model = BertForNextSentencePrediction.from_pretrained(base_model)
     else:
         print("[Error]: unsupported model type")
         return None, None
     
-    tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
+    tokenizer = BertTokenizer.from_pretrained(base_model)
     model.to(device)
     return model, tokenizer
 
+class DataGenerator(object):
+    def __init__(self, data_path, data_name, split):
+        super(DataGenerator, self).__init__()
+        self.tweet = 1 if "twitter" in data_path else 0
+        if self.tweet:
+            self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
+            self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
+            self.fsim = open(os.path.join(data_path, "{}/{}/sim.txt".format(data_name, split)))
+            self.fid = open(os.path.join(data_path, "{}/{}/id.txt".format(data_name, split)))
+            self.furl = open(os.path.join(data_path, "{}/{}/url.txt".format(data_name, split)))
+        else:
+            self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
 
-def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda"):
-    f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
-    test_batch, testid_batch, mask_batch, label_batch = [], [], [], []
+    def get_instance(self):
+        if self.tweet:
+            for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
+                return sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), ID.replace("\n", ""), url.replace("\n", "")
+        else:
+            for l in self.f:
+                label, a, b = l.replace("\n", "").split("\t")
+                return label, a, b, None, None
+
+        return None, None, None, None, None
+
+def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda", tweet=False):
+    test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
     data_set = []
-    for l in f:
-        label, a, b = l.replace("\n", "").split("\t")
-        a_index = tokenize_index(a, tokenizer)
-        b_index = tokenize_index(b, tokenizer)
-        combine_index = a_index + b_index
-        segments_ids = [0] * len(a_index) + [1] * len(b_index)
-        test_batch.append(torch.tensor(combine_index))
-        testid_batch.append(torch.tensor(segments_ids))
-        mask_batch.append(torch.ones(len(combine_index)))
-        label_batch.append(int(label))
-        if len(test_batch) >= batch_size:
+    while True:
+        dataGenerator = DataGenerator(data_path, data_name, split)
+        while True:
+            label, a, b, ID, url = dataGenerator.get_instance()
+            if label is None:
+                break
+            a = "[CLS] " + a + " [SEP]"
+            b = b + " [SEP]"
+            a_index = tokenize_index(a, tokenizer)
+            b_index = tokenize_index(b, tokenizer)
+            combine_index = a_index + b_index
+            segments_ids = [0] * len(a_index) + [1] * len(b_index)
+            test_batch.append(torch.tensor(combine_index))
+            testqid_batch.append(torch.tensor(segments_ids))
+            mask_batch.append(torch.ones(len(combine_index)))
+            label_batch.append(int(label))
+            qid, _, docid, _, _, _ = ID.split()
+            qid = int(qid)
+            docid = int(docid)
+            qid_batch.append(qid)
+            docid_batch.append(docid)
+            if len(test_batch) >= batch_size:
+                # Convert inputs to PyTorch tensors
+                tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(device)
+                segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(device)
+                mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(device)
+                label_tensor = torch.tensor(label_batch, device=device)
+                qid_tensor = torch.tensor(qid_batch, device=device)
+                docid_tensor = torch.tensor(docid_batch, device=device)
+                data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor))
+                test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
+                yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+ 
+        if len(test_batch) != 0:
             # Convert inputs to PyTorch tensors
             tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(device)
-            segments_tensor = torch.nn.utils.rnn.pad_sequence(testid_batch, batch_first=True, padding_value=0).to(device)
+            segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(device)
             mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(device)
             label_tensor = torch.tensor(label_batch, device=device)
-            data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor))
-            test_batch, testid_batch, mask_batch, label_batch = [], [], [], []
+            qid_tensor = torch.tensor(qid_tensor, device=device)
+            docid_tensor = torch.tensor(docid_batch, device=device)
+            data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor))
+            test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docqid_batch = [], [], [], [], [], []
+            yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor) 
 
-    if len(test_batch) != 0:
-        # Convert inputs to PyTorch tensors
-        tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(device)
-        segments_tensor = torch.nn.utils.rnn.pad_sequence(testid_batch, batch_first=True, padding_value=0).to(device)
-        mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(device)
-        label_tensor = torch.tensor(label_batch, device=device)
-        data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor))
-        test_batch, testid_batch, mask_batch, label_batch = [], [], [], []
-    
-    return data_set
+        if split != "train":
+            break
 
-def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs, data_size):
+    return None
+    # return data_set
+
+def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs, data_size, batch_size):
     param_optimizer = list(model.named_parameters())
     no_decay = ['bias', 'gamma', 'beta']
-    num_train_steps = data_size * num_train_epochs
+    num_train_steps = data_size / batch_size * num_train_epochs
     optimizer_grouped_parameters = [
         {'params': [p for n, p in param_optimizer if n not in no_decay], 'weight_decay_rate': 0.01},
         {'params': [p for n, p in param_optimizer if n in no_decay], 'weight_decay_rate': 0.0}
