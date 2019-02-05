@@ -3,6 +3,9 @@ import random
 import os 
 import numpy as np
 import argparse
+import subprocess
+import shlex
+import sys
 
 import torch
 
@@ -32,6 +35,8 @@ def train(args):
         tr_loss = 0
         # random.shuffle(train_dataset)
         for step, batch in enumerate(tqdm(train_dataset)):
+            if batch is None:
+                break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor, _, _ = batch
             if args.model_type == "BertForNextSentencePrediction" or args.model_type == "BertForQuestionAnswering":
                 # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape, label_tensor.shape)
@@ -102,7 +107,10 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     f = open(args.output_path, "w")
     f2 = open(args.output_path2, "w")
     lineno = 1
-    for tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor in test_dataset:
+    for batch in test_dataset:
+        if batch is None:
+            break
+        tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=1).cpu().numpy())
@@ -120,14 +128,18 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     
     f.close()
     f2.close()
-    acc = get_acc(prediction_index_list, labels)
+    # acc, pre, rec, f1 = 0, 0, 0, 0
+    # acc = get_acc(prediction_index_list, labels)
     # p1 = get_p1(prediction_score_list, labels, args.data_path, args.data_name, split)
-    pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
+    # pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
+    map, mrr, p30 = evaluate(predictions_file=args.output_path2, \
+            qrels_file="./qrels.microblog.txt")
 
     torch.cuda.empty_cache()
     model.train()
-    
-    return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
+
+    return [["map", "mrr", "p30"],[map, mrr, p30]]
+    # return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
     # return [["acc", "p@1", "precision", "recall", "f1"], [acc, p1, pre, rec, f1]]
 
 if __name__ == '__main__':

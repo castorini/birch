@@ -2,6 +2,9 @@ from tqdm import tqdm
 import random 
 import os
 import numpy as np
+import subprocess
+import shlex
+import sys
 
 import torch
 
@@ -27,6 +30,20 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     tokenizer = BertTokenizer.from_pretrained(base_model)
     model.to(device)
     return model, tokenizer
+
+def evaluate(predictions_file, qrels_file):
+    pargs = shlex.split("/bin/sh run_eval.sh '{}' '{}'".format(qrels_file, predictions_file))
+    p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    pout, perr = p.communicate()
+
+    if sys.version_info[0] < 3:
+        lines = pout.split(b'\n')
+    else:
+        lines = pout.split(b'\n')
+    map = float(lines[0].strip().split()[-1])
+    mrr = float(lines[1].strip().split()[-1])
+    p30 = float(lines[2].strip().split()[-1])
+    return map, mrr, p30
 
 class DataGenerator(object):
     def __init__(self, data_path, data_name, split):
@@ -94,14 +111,15 @@ def load_data(data_path, data_name, batch_size, tokenizer, split="train", device
             segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(device)
             mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(device)
             label_tensor = torch.tensor(label_batch, device=device)
-            qid_tensor = torch.tensor(qid_tensor, device=device)
+            qid_tensor = torch.tensor(qid_batch, device=device)
             docid_tensor = torch.tensor(docid_batch, device=device)
             data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor))
             test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docqid_batch = [], [], [], [], [], []
             yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor) 
-
-        if split != "train":
-            break
+        
+        # if split != "train":
+        #    break
+        yield None 
 
     return None
     # return data_set
@@ -130,7 +148,7 @@ def tokenize_index(text, tokenizer):
 
 def get_acc(prediction_index_list, labels):
     acc = sum(np.array(prediction_index_list) == np.array(labels))
-    return acc / len(labels)
+    return acc / (len(labels) + 1e-9)
 
 def get_pre_rec_f1(prediction_index_list, labels):
     tp, tn, fp, fn = 0, 0, 0, 0
