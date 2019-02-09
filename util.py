@@ -54,7 +54,7 @@ class DataGenerator(object):
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
             self.fsim = open(os.path.join(data_path, "{}/{}/sim.txt".format(data_name, split)))
             self.fid = open(os.path.join(data_path, "{}/{}/id.txt".format(data_name, split)))
-            self.furl = open(os.path.join(data_path, "{}/{}/url.txt".format(data_name, split)))
+            self.furl = open(os.path.join(data_path, "{}/{}/url_new.txt".format(data_name, split)))
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
 
@@ -69,7 +69,7 @@ class DataGenerator(object):
 
         return None, None, None, None, None
 
-def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda", tweet=False):
+def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda", tweet=False, add_url=True):
     test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
     data_set = []
     while True:
@@ -79,7 +79,10 @@ def load_data(data_path, data_name, batch_size, tokenizer, split="train", device
             if label is None:
                 break
             a = "[CLS] " + a + " [SEP]"
-            b = b + " [SEP]"
+            if add_url:
+                b = b + " " + url + " [SEP]"
+            else:
+                b = b + " [SEP]"
             a_index = tokenize_index(a, tokenizer)
             b_index = tokenize_index(b, tokenizer)
             combine_index = a_index + b_index
