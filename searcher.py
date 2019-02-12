@@ -27,16 +27,11 @@ def answerini_retriever(query, searcher, para_num=20):
     documents = []
 
     for document in hits:
-
-        if ("||" in document.content) or ("/><" in document.content) or \
-           ("|----|" in document.content) or ("#fffff" in document.content):
-            print("################### dirty data #################")
-            print(document.docid, document.ldocid)
-        else:
-            document_dict = {'text': document.content,
-                              'document_score': document.score,
-                              'docid': document.docid}
-            documents.append(document_dict)
+        # TODO: filter out impossible sentences
+        document_dict = {'text': document.content,
+                          'document_score': document.score,
+                          'docid': document.docid}
+        documents.append(document_dict)
 
     return documents
 
