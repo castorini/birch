@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 import jnius_config
-jnius_config.set_classpath("target/anserini-0.3.1-SNAPSHOT-fatjar.jar")
+jnius_config.set_classpath("../target/anserini-0.3.1-SNAPSHOT-fatjar.jar")
 
 from jnius import autoclass
 JString = autoclass('java.lang.String')

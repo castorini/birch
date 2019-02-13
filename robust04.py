@@ -39,7 +39,7 @@ def parse_doc_from_index(doc):
 def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids, K=1000):
     f = open(prediction_fn, "w")
     out = open(output_fn, "w")
-    method = "bm25"
+    method = "rm3"
     for qid in qid2text:
         a = qid2text[qid]
         hits = searcher.search(JString(a), K)
@@ -89,14 +89,14 @@ def cal_score(fn_qrels="../Anserini/src/main/resources/topics-and-qrels/qrels.ro
     return Map, Mrr, P30, P20, NDCG20
 
 if __name__ == '__main__':
-    fqrel = "../Anserini/src/main/resources/topics-and-qrels/qrels.robust2004.txt"
+    fqrel = "../src/main/resources/topics-and-qrels/qrels.robust2004.txt"
     qid2reldocids = get_qid2reldocids(fqrel)
-    ftopic = "../Anserini/src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
+    ftopic = "../src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
     qid2text = get_qid2query(ftopic)
     prediction_fn = "predict_robust04_bm25.txt"
-    output_fn = "data/robust04_bm25.txt"
+    output_fn = "robust04_bm25.txt"
     index_path="/tuna1/indexes/lucene-index.robust04.pos+docvectors+rawdocs"
-    searcher = build_searcher(index_path=index_path)
+    searcher = build_searcher(index_path=index_path,rm3=True)
     # searcher = build_searcher()
     search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids)
     cal_score(prediction=prediction_fn)
