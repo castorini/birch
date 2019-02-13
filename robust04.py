@@ -7,9 +7,39 @@ import os
 import shlex
 import subprocess
 import sys
+import re
 
 from searcher import *
 import searcher
+
+import nltk
+nltk.download('punkt')
+
+import nltk.data
+tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+
+
+def clean_html(html):
+    """
+    Copied from NLTK package.
+    Remove HTML markup from the given string.
+    :param html: the HTML string to be cleaned
+    :type html: str
+    :rtype: str
+    """
+
+    # First we remove inline JavaScript/CSS:
+    cleaned = re.sub(r"(?is)<(script|style).*?>.*?(</\1>)", "", html.strip())
+    # Then we remove html comments. This has to be done before removing regular
+    # tags since comments can contain '>' characters.
+    cleaned = re.sub(r"(?s)<!--(.*?)-->[\n]?", "", cleaned)
+    # Next we can remove the remaining tags:
+    cleaned = re.sub(r"(?s)<.*?>", " ", cleaned)
+    # Finally, we deal with whitespace
+    cleaned = re.sub(r"&nbsp;", " ", cleaned)
+    cleaned = re.sub(r"  ", " ", cleaned)
+    cleaned = re.sub(r"  ", " ", cleaned)
+    return cleaned.strip()
 
 def get_qid2query(ftopic):
     qid2query = {}
@@ -36,8 +66,8 @@ def get_qid2query(ftopic):
 def parse_doc_from_index(doc):
     return doc
 
-def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids, K=1000):
-    f = open(prediction_fn, "w")
+def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids, K=100):
+    # f = open(prediction_fn, "w")
     out = open(output_fn, "w")
     method = "rm3"
     for qid in qid2text:
@@ -49,10 +79,15 @@ def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids,
             label = 1 if qid in qid2reldocids and docno in qid2reldocids[qid] else 0
             b = parse_doc_from_index(hits[i].content)
             b = "".join(filter(lambda x: x in printable, b))
-            f.write("{} 0 {} 0 {} {}\n".format(qid, docno, sim, method))
-            out.write("{}\t{}\t{}\t{}\t{}\n".format(label, a, b, qid, docno))
-            out.flush()
-    f.close()
+            clean_b = clean_html(b)
+            sent_id = 0
+            for sentence in tokenizer.tokenize(clean_b):
+            	# f.write("{} 0 {} 0 {} {}\n".format(qid, docno, sim, method))
+            	out.write("{}\t{}\t{}\t{}\t{}\n".format(label, a, sentence, \
+            		qid, docno + '_'+ str(sent_id)))
+            	out.flush()
+            	sent_id += 1
+    # f.close()
     out.close()
 
 def get_qid2reldocids(fqrel):
