@@ -41,6 +41,16 @@ def clean_html(html):
     cleaned = re.sub(r"  ", " ", cleaned)
     return cleaned.strip()
 
+def chunk_sent(sent, max_len):
+    chunked_sents = []
+    idx = 0
+    words = sent.strip().split()
+    size = int(len(words)/max_len)
+    for i in range(0, size):
+        seq = words[i * max_len: (i+1) * max_len]
+        chunked_sents.append(" ".join(seq))
+    return chunked_sents
+
 def get_qid2query(ftopic):
     qid2query = {}
     f = open(ftopic)
@@ -70,6 +80,7 @@ def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids,
     # f = open(prediction_fn, "w")
     out = open(output_fn, "w")
     method = "rm3"
+    qidx, didx = 0, 0
     for qid in qid2text:
         a = qid2text[qid]
         hits = searcher.search(JString(a), K)
@@ -82,12 +93,24 @@ def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids,
             clean_b = clean_html(b)
             sent_id = 0
             for sentence in tokenizer.tokenize(clean_b):
-                sentno = docno + '_'+ str(sent_id)
-                # f.write("{} 0 {} 0 {} {}\n".format(qid, sentno, sim, method))
-                out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(label, \
-                    sim, a, sentence, qid, sentno))
-                out.flush()
-                sent_id += 1
+                if len(sentence.strip().split()) > 512:
+                    seq_list = chunk_sent(sentence, 512)
+                    for seq in seq_list:
+                        sentno = docno + '_'+ str(sent_id)
+                        # f.write("{} 0 {} 0 {} {}\n".format(qid, sentno, sim, method))
+                        out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(label, sim, a, seq, qid, sentno, qidx, didx))
+                        out.flush()
+                        sent_id += 1
+                        didx += 1
+                else:
+                    sentno = docno + '_'+ str(sent_id)
+                    # f.write("{} 0 {} 0 {} {}\n".format(qid, sentno, sim, method))
+                    out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(label,\
+                        sim, a, sentence, qid, sentno, qidx, didx))
+                    out.flush()
+                    sent_id += 1
+                    didx += 1
+        qidx += 1
     # f.close()
     out.close()
 
