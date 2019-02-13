@@ -82,11 +82,12 @@ def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids,
             clean_b = clean_html(b)
             sent_id = 0
             for sentence in tokenizer.tokenize(clean_b):
-            	# f.write("{} 0 {} 0 {} {}\n".format(qid, docno, sim, method))
-            	out.write("{}\t{}\t{}\t{}\t{}\n".format(label, a, sentence, \
-            		qid, docno + '_'+ str(sent_id)))
-            	out.flush()
-            	sent_id += 1
+                sentno = docno + '_'+ str(sent_id)
+                # f.write("{} 0 {} 0 {} {}\n".format(qid, sentno, sim, method))
+                out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(label, \
+                    sim, a, sentence, qid, sentno))
+                out.flush()
+                sent_id += 1
     # f.close()
     out.close()
 
@@ -134,4 +135,4 @@ if __name__ == '__main__':
     searcher = build_searcher(index_path=index_path,rm3=True)
     # searcher = build_searcher()
     search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids)
-    cal_score(prediction=prediction_fn)
+    # cal_score(prediction=prediction_fn)
