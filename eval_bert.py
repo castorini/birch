@@ -1,6 +1,7 @@
 from collections import defaultdict
 import numpy as np
 import operator
+import sys
 
 def load_nist_qrels():
     rel_dict = defaultdict(list) 
@@ -27,30 +28,36 @@ def load_q_doc_bm25(bm25F):
             q_dict[qno] = qid
     return doc_dict, q_dict
 
-def load_q_doc_bert(bertF, doc_dict, qno, q_dict):
-    score_dict = defaultdict(lambda:0)
-    topic = q_dict[qno]
+def load_q_doc_bert(bertF, doc_dict, q_dict, topK):
+    score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
             q, _, d, _, score, _ = line.strip().split()
-            if q != qno:
-                continue
             sent = doc_dict[d]
             doc = sent.split('_')[0]
             score = float(score)
-            # if score > score_dict[doc]:
-            score_dict[doc] += score
-    sorted_doc = sorted(score_dict.items(), key=operator.itemgetter(1), reverse=True)
-    rank = 1
-    for doc, score in sorted_doc:
-        print topic, 'Q0', doc, rank, score, 'Sum'
-        rank+=1
+            if doc not in score_dict[q]:
+                score_dict[q][doc] = [score]
+            else:
+                score_dict[q][doc].append(score)
+    for q in score_dict:
+        doc_dict = {}
+        for d in score_dict[q]:
+            scores = score_dict[q][d]
+            scores.sort(reverse=True)
+            # assert(len(scores) > 5) 
+            doc_dict[d] = sum(scores[:topK])
+        doc_dict = sorted(doc_dict.items(), key=operator.itemgetter(1), reverse=True)
+        rank = 1
+        for doc, score in doc_dict:
+            print q_dict[q], 'Q0', doc, rank, score, 'TopK'
+            rank+=1
 
 def main():
+    topK = int(sys.argv[1])
     rel_dict, nonrel_dict, all_dict = load_nist_qrels()
     doc_dict, q_dict = load_q_doc_bm25('robust04_bm25_test.csv')
-    for q in q_dict:
-        load_q_doc_bert('prediction.trec', doc_dict, q, q_dict)
+    load_q_doc_bert('prediction.trec_tweet_title', doc_dict, q_dict, topK)
 
 if __name__ == "__main__":
     main()
