@@ -23,18 +23,21 @@ def train(args):
         epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path) 
     else:
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
-    train_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
-    validate_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device)
-    test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
+    train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
+    validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device)
+    test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, args.data_size, args.batch_size)
     
     model.train()
     global_step = 0
     best_score = 0
+    step = 0
     for epoch in range(1, args.num_train_epochs+1):
+        print("epoch {} ............".format(epoch))
         tr_loss = 0
         # random.shuffle(train_dataset)
-        for step, batch in enumerate(tqdm(train_dataset)):
+        while True:
+            batch = train_dataset.load_batch()
             if batch is None:
                 break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor, _, _ = batch
@@ -50,7 +53,10 @@ def train(args):
             global_step += 1
             
             if args.eval_steps > 0 and step % args.eval_steps == 0:
+                print("step: {}".format(step))
                 best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, args.model_type)
+            
+            step += 1
 
         print("[train] loss: {}".format(tr_loss))
         best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, args.model_type)
@@ -107,7 +113,8 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     f = open(args.output_path, "w")
     f2 = open(args.output_path2, "w")
     lineno = 1
-    for batch in test_dataset:
+    while True:
+        batch = test_dataset.load_batch()
         if batch is None:
             break
         tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
