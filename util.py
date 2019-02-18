@@ -31,20 +31,6 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     model.to(device)
     return model, tokenizer
 
-def evaluate(predictions_file, qrels_file):
-    pargs = shlex.split("/bin/sh run_eval.sh '{}' '{}'".format(qrels_file, predictions_file))
-    p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    pout, perr = p.communicate()
-
-    if sys.version_info[0] < 3:
-        lines = pout.split(b'\n')
-    else:
-        lines = pout.split(b'\n')
-    map = float(lines[0].strip().split()[-1])
-    mrr = float(lines[1].strip().split()[-1])
-    p30 = float(lines[2].strip().split()[-1])
-    return map, mrr, p30
-
 class DataGenerator(object):
     def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", add_url=False):
         super(DataGenerator, self).__init__()
@@ -62,8 +48,11 @@ class DataGenerator(object):
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             for l in self.f:
-                label, a, b = l.replace("\n", "").split("\t")
-                self.data.append(label, a, b)
+                ls = l.replace("\n", "").split("\t")
+                if len(ls) == 3:
+                    self.data.append(ls)
+                else:
+                    self.data.append([ls[0], ls[1], " ".join(ls[2:])])
         
         self.i = 0
         self.data_size = len(self.data)
@@ -92,10 +81,13 @@ class DataGenerator(object):
         while True:
             if not self.start and self.epoch_end():
                 self.start = True
-                print("End of an epoch")
                 break
             self.start = False
-            label, a, b, ID, url = self.get_instance()
+            instance = self.get_instance()
+            if len(instance) == 5:
+                label, a, b, ID, url = instance
+            else:
+                label, a, b = instance
             a = "[CLS] " + a + " [SEP]"
             if self.add_url:
                 b = b + " " + url + " [SEP]"
@@ -109,24 +101,27 @@ class DataGenerator(object):
             testqid_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
             label_batch.append(int(label))
-            qid, _, docid, _, _, _ = ID.split()
-            qid = int(qid)
-            docid = int(docid)
-            qid_batch.append(qid)
-            docid_batch.append(docid)
+            if len(instance) == 5:
+                qid, _, docid, _, _, _ = ID.split()
+                qid = int(qid)
+                docid = int(docid)
+                qid_batch.append(qid)
+                docid_batch.append(docid)
             if len(test_batch) >= self.batch_size or self.epoch_end():
                 # Convert inputs to PyTorch tensors
                 tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(self.device)
                 segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(self.device)
                 mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
                 label_tensor = torch.tensor(label_batch, device=self.device)
-                qid_tensor = torch.tensor(qid_batch, device=self.device)
-                docid_tensor = torch.tensor(docid_batch, device=self.device)
+                if len(instance) == 5:
+                    qid_tensor = torch.tensor(qid_batch, device=self.device)
+                    docid_tensor = torch.tensor(docid_batch, device=self.device)
+                    return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+                else:
+                    return (tokens_tensor, segments_tensor, mask_tensor, label_tensor)
+
                 test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
-                return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
  
-        # if split != "train":
-        #    break
         return None 
 
 
@@ -145,6 +140,25 @@ def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs, da
                     t_total=num_train_steps)
     
     return optimizer
+        
+def evaluate_trec(predictions_file, qrels_file):
+    pargs = shlex.split("/bin/sh run_eval.sh '{}' '{}'".format(qrels_file, predictions_file))
+    p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    pout, perr = p.communicate()
+
+    if sys.version_info[0] < 3:
+        lines = pout.split(b'\n')
+    else:
+        lines = pout.split(b'\n')
+    map = float(lines[0].strip().split()[-1])
+    mrr = float(lines[1].strip().split()[-1])
+    p30 = float(lines[2].strip().split()[-1])
+    return map, mrr, p30
+
+def evaluate_classification(prediction_index_list, labels):
+    acc = get_acc(prediction_index_list, labels)
+    pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
+    return acc, pre, rec, f1
 
 def get_acc(prediction_index_list, labels):
     acc = sum(np.array(prediction_index_list) == np.array(labels))
@@ -152,6 +166,9 @@ def get_acc(prediction_index_list, labels):
 
 def get_pre_rec_f1(prediction_index_list, labels):
     tp, tn, fp, fn = 0, 0, 0, 0
+    # print("prediction_index_list: ", prediction_index_list)
+    # print("labels: ", labels)
+    assert len(prediction_index_list) == len(labels)
     for p, l in zip(prediction_index_list, labels):
         if p == l:
             if p == 1:

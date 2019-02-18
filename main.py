@@ -26,7 +26,7 @@ def train(args):
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
     validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device)
     test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
-    optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, args.data_size, args.batch_size)
+    optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, train_dataset.data_size, args.batch_size)
     
     model.train()
     global_step = 0
@@ -40,7 +40,7 @@ def train(args):
             batch = train_dataset.load_batch()
             if batch is None:
                 break
-            tokens_tensor, segments_tensor, mask_tensor, label_tensor, _, _ = batch
+            tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch[:4]
             if args.model_type == "BertForNextSentencePrediction" or args.model_type == "BertForQuestionAnswering":
                 # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape, label_tensor.shape)
                 loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
@@ -117,7 +117,10 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         batch = test_dataset.load_batch()
         if batch is None:
             break
-        tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
+        if args.data_format == "trec":
+            tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
+        else:
+            tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=1).cpu().numpy())
@@ -125,29 +128,28 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
         labels.extend(list(label_tensor.cpu().detach().numpy()))
-        qids = qid_tensor.cpu().detach().numpy()
-        docids = docid_tensor.cpu().detach().numpy()
-        for p, qid, docid, s in zip(predicted_index, qids, docids, scores):
-            f.write("{}\t{}\n".format(lineno, p))
-            f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
-            lineno += 1
+        if args.data_format == "trec":
+            qids = qid_tensor.cpu().detach().numpy()
+            docids = docid_tensor.cpu().detach().numpy()
+            for p, qid, docid, s in zip(predicted_index, qids, docids, scores):
+                f.write("{}\t{}\n".format(lineno, p))
+                f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
+                lineno += 1
+
         del predictions
     
     f.close()
     f2.close()
-    # acc, pre, rec, f1 = 0, 0, 0, 0
-    # acc = get_acc(prediction_index_list, labels)
-    # p1 = get_p1(prediction_score_list, labels, args.data_path, args.data_name, split)
-    # pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
-    map, mrr, p30 = evaluate(predictions_file=args.output_path2, \
-            qrels_file="./qrels.microblog.txt")
-
     torch.cuda.empty_cache()
     model.train()
-
-    return [["map", "mrr", "p30"],[map, mrr, p30]]
-    # return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
-    # return [["acc", "p@1", "precision", "recall", "f1"], [acc, p1, pre, rec, f1]]
+    
+    if args.data_format == "trec":
+        map, mrr, p30 = evaluate_trec(predictions_file=args.output_path2, \
+            qrels_file="./qrels.microblog.txt")
+        return [["map", "mrr", "p30"],[map, mrr, p30]]
+    else:
+        acc, pre, rec, f1 = evaluate_classification(prediction_index_list, labels)
+        return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -166,6 +168,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
     parser.add_argument('--output_path', default='prediction.tmp', help='')
     parser.add_argument('--output_path2', default='prediction.trec', help='')
+    parser.add_argument('--data_format', default='classification', help='[classification, trec, tweet]')
     parser.add_argument('--warmup_proportion', default=0.1, type=float, help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()
     
