@@ -32,19 +32,24 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     return model, tokenizer
 
 class DataGenerator(object):
-    def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", add_url=False):
+    def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", data_format="trec", add_url=False):
         super(DataGenerator, self).__init__()
-        self.tweet = 1 if "twitter" in data_path or "MB" in data_path else 0
         self.data = []
-        if self.tweet:
+        if data_format == "trec":
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
             self.fsim = open(os.path.join(data_path, "{}/{}/sim.txt".format(data_name, split)))
             self.fid = open(os.path.join(data_path, "{}/{}/id.txt".format(data_name, split)))
-            self.furl = open(os.path.join(data_path, "{}/{}/url.txt".format(data_name, split)))
-            for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
-                self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
-                        ID.replace("\n", ""), url.replace("\n", "")])
+            if add_url:
+                self.furl = open(os.path.join(data_path, "{}/{}/url.txt".format(data_name, split)))
+                for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
+                    self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
+                            ID.replace("\n", ""), url.replace("\n", "")])
+            else:
+                for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
+                    self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
+                            ID.replace("\n", "")])
+
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             for l in self.f:
@@ -86,6 +91,8 @@ class DataGenerator(object):
             instance = self.get_instance()
             if len(instance) == 5:
                 label, a, b, ID, url = instance
+            elif len(instance) == 4:
+                label, a, b, ID = instance
             else:
                 label, a, b = instance
             a = "[CLS] " + a + " [SEP]"
@@ -101,7 +108,7 @@ class DataGenerator(object):
             testqid_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
             label_batch.append(int(label))
-            if len(instance) == 5:
+            if len(instance) >= 4:
                 qid, _, docid, _, _, _ = ID.split()
                 qid = int(qid)
                 docid = int(docid)

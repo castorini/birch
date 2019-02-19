@@ -23,9 +23,9 @@ def train(args):
         epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path) 
     else:
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
-    train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
-    validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device)
-    test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
+    train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device, args.data_format)
+    validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device, args.data_format)
+    test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device, args.data_format)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, train_dataset.data_size, args.batch_size)
     
     model.train()
