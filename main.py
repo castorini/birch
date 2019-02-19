@@ -106,7 +106,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
     if test_dataset is None: 
         print("Load test set")
-        test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device)
+        test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device, args.data_format)
     
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []

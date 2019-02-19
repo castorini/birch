@@ -121,7 +121,7 @@ class DataGenerator(object):
                 segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(self.device)
                 mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
                 label_tensor = torch.tensor(label_batch, device=self.device)
-                if len(instance) == 5:
+                if len(instance) >= 4:
                     qid_tensor = torch.tensor(qid_batch, device=self.device)
                     docid_tensor = torch.tensor(docid_batch, device=self.device)
                     return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
