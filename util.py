@@ -54,6 +54,7 @@ class DataGenerator(object):
                 else:
                     self.data.append([ls[0], ls[1], " ".join(ls[2:])])
         
+        np.random.shuffle(self.data)
         self.i = 0
         self.data_size = len(self.data)
         self.add_url = add_url
