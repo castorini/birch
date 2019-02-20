@@ -112,6 +112,8 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     prediction_score_list, prediction_index_list, labels = [], [], []
     f = open(args.output_path, "w")
     f2 = open(args.output_path2, "w")
+    qrelf = open(split + '.' + args.qrels_path, "w")
+
     lineno = 1
     while True:
         batch = test_dataset.load_batch()
@@ -131,21 +133,24 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         if args.data_format == "trec":
             qids = qid_tensor.cpu().detach().numpy()
             docids = docid_tensor.cpu().detach().numpy()
-            for p, qid, docid, s in zip(predicted_index, qids, docids, scores):
+            for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
+            	scores, labels):
                 f.write("{}\t{}\n".format(lineno, p))
                 f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
+                qrelf.write("{} 0 {} {}\n".format(qid, docid, label))
                 lineno += 1
 
         del predictions
     
     f.close()
     f2.close()
+    qrelf.close()
     torch.cuda.empty_cache()
     model.train()
     
     if args.data_format == "trec":
         map, mrr, p30 = evaluate_trec(predictions_file=args.output_path2, \
-            qrels_file="./qrels.microblog.txt")
+            qrels_file=split + '.' + args.qrels_path)
         return [["map", "mrr", "p30"],[map, mrr, p30]]
     else:
         acc, pre, rec, f1 = evaluate_classification(prediction_index_list, labels)
@@ -168,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
     parser.add_argument('--output_path', default='prediction.tmp', help='')
     parser.add_argument('--output_path2', default='prediction.trec', help='')
+    parser.add_argument('--qrels_path', default='qrels.trec', help='')
     parser.add_argument('--data_format', default='classification', help='[classification, trec, tweet]')
     parser.add_argument('--warmup_proportion', default=0.1, type=float, help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()
