@@ -10,6 +10,7 @@ import sys
 import torch
 
 from util import *
+from eval import *
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -22,10 +23,10 @@ def train(args):
     if args.load_trained:
         epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path) 
     else:
-        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
+        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device, chinese=args.chinese, num_labels=args.num_labels)
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device, args.data_format)
-    validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device, args.data_format)
-    test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device, args.data_format)
+    validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device, args.data_format, label_map=train_dataset.label_map)
+    test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device, args.data_format, label_map=train_dataset.label_map)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs, train_dataset.data_size, args.batch_size)
     
     model.train()
@@ -41,7 +42,8 @@ def train(args):
             if batch is None:
                 break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch[:4]
-            if args.model_type == "BertForNextSentencePrediction" or args.model_type == "BertForQuestionAnswering":
+            if args.model_type == "BertForNextSentencePrediction" or args.model_type == "BertForQuestionAnswering" \
+                    or args.model_type == "BertForTokenClassification":
                 # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape, label_tensor.shape)
                 loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
             else:
@@ -75,7 +77,7 @@ def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, be
         # Save pytorch-model
         model_path = "{}_{}".format(model_path, epoch)
         print("Save PyTorch model to {}".format(model_path))
-        save_checkpoint(epoch, arch, model, tokenizer, scores_dev, model_path)
+        save_checkpoint(epoch, arch, model, tokenizer, scores_dev, model_path, test_dataset.label_map)
 
     return best_score
 
@@ -86,27 +88,28 @@ def print_scores(scores, mode="test"):
         print("{}: {}".format(sn, score), end=" ")
     print("")
 
-def save_checkpoint(epoch, arch, model, tokenizer, scores, filename):
+def save_checkpoint(epoch, arch, model, tokenizer, scores, filename, label_map):
     state = {
         'epoch': epoch,
         'arch': arch,
         'model': model,
         'tokenizer': tokenizer, 
-        'scores': scores
+        'scores': scores,
+        'label_map': label_map
     }
     torch.save(state, filename)
 
 def load_checkpoint(filename):
     print("Load PyTorch model from {}".format(filename))
     state = torch.load(filename)
-    return state['epoch'], state['arch'], state['model'], state['tokenizer'], state['scores']
+    return state['epoch'], state['arch'], state['model'], state['tokenizer'], state['scores'], state['label_map']
 
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
-        epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
-    if test_dataset is None: 
+        epoch, arch, model, tokenizer, scores, label_map = load_checkpoint(args.pytorch_dump_path)
+        assert test_dataset is None 
         print("Load test set")
-        test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device, args.data_format)
+        test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device, args.data_format, label_map=label_map)
     
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
@@ -125,7 +128,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
-        predicted_index = list(torch.argmax(predictions, dim=1).cpu().numpy())
+        predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
         prediction_index_list += predicted_index
         predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
@@ -139,6 +142,11 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
                 f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
                 qrelf.write("{} 0 {} {}\n".format(qid, docid, label))
                 lineno += 1
+        elif args.data_format == "ontonote":
+            tokens =  tokens_tensor.cpu().detach().numpy()
+            for token, p, label in zip(tokens, predicted_index, labels):
+                for a, b, c in zip(token, p, label):
+                    f.write("{} {} {}\n".format(a, b, c))
 
         del predictions
     
@@ -152,9 +160,11 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         map, mrr, p30 = evaluate_trec(predictions_file=args.output_path2, \
             qrels_file=split + '.' + args.qrels_path)
         return [["map", "mrr", "p30"],[map, mrr, p30]]
+    elif args.data_format == "ontonote":
+        acc, pre, rec, f1 = evaluate_ner(prediction_index_list, labels, test_dataset.label_map)
     else:
         acc, pre, rec, f1 = evaluate_classification(prediction_index_list, labels)
-        return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
+    return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -174,6 +184,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_path', default='predict.tmp', help='')
     parser.add_argument('--output_path2', default='predict.trec', help='')
     parser.add_argument('--qrels_path', default='qrels.trec', help='')
+    parser.add_argument('--num_labels', default=2, type=int, help='')
     parser.add_argument('--data_format', default='classification', help='[classification, trec, tweet]')
     parser.add_argument('--warmup_proportion', default=0.1, type=float, help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()

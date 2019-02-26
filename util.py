@@ -8,21 +8,23 @@ import sys
 
 import torch
 
-from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, BertForNextSentencePrediction
+from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, BertForNextSentencePrediction, BertForTokenClassification
 from pytorch_pretrained_bert.optimization import BertAdam
 
 
-def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", device="cuda", chinese=False):
+def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", device="cuda", chinese=False, num_labels=2):
     # Load pre-trained model (weights)
     if chinese:
         base_model = "bert-base-chinese"
     else:
         base_model = "bert-base-uncased"
     if model_type == "BertForSequenceClassification":
-        model = BertForSequenceClassification.from_pretrained(base_model)
+        model = BertForSequenceClassification.from_pretrained(base_model, num_labels=num_labels)
         # Load pre-trained model tokenizer (vocabulary)
     elif model_type == "BertForNextSentencePrediction":
         model = BertForNextSentencePrediction.from_pretrained(base_model)
+    elif model_type == "BertForTokenClassification":
+        model = BertForTokenClassification.from_pretrained(base_model, num_labels=num_labels)
     else:
         print("[Error]: unsupported model type")
         return None, None
@@ -32,9 +34,10 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     return model, tokenizer
 
 class DataGenerator(object):
-    def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", data_format="trec", add_url=False):
+    def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", data_format="trec", add_url=False, label_map=None):
         super(DataGenerator, self).__init__()
         self.data = []
+        self.data_format = data_format
         if data_format == "trec":
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
@@ -50,6 +53,27 @@ class DataGenerator(object):
                     self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
                             ID.replace("\n", "")])
 
+        elif data_format == "ontonote":
+            self.f = open(os.path.join(data_path, "{}/{}.char.bmes".format(data_name, split)))
+            label, token = [], []
+            self.label_map = {} if label_map is None else label_map
+            for l in self.f:
+                ls = l.replace("\n", "").split()
+                if len(ls) > 1:
+                    if ls[1] not in self.label_map:
+                        if split == "test" or split == "dev":
+                            print("See new label in {} set: {}".format(split, ls[1]))
+                        self.label_map[ls[1]] = len(self.label_map)
+                    label.append(self.label_map[ls[1]])
+                    token.append(ls[0])
+                else:
+                    self.data.append([token, label])
+                    label, token = [], []
+            if len(label) > 0:
+               self.data.append([token, label])
+
+            print("label_map: {}".format(self.label_map))
+        
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             for l in self.f:
@@ -58,6 +82,7 @@ class DataGenerator(object):
                     self.data.append(ls)
                 else:
                     self.data.append([ls[0], ls[1], " ".join(ls[2:])])
+        
         
         np.random.shuffle(self.data)
         self.i = 0
@@ -78,12 +103,54 @@ class DataGenerator(object):
 
     def tokenize_index(self, text):
         tokenized_text = self.tokenizer.tokenize(text)
+        tokenized_text.insert(0, "[CLS]")
+        tokenized_text.append("[SEP]")
         # Convert token to vocabulary indices
         indexed_tokens = self.tokenizer.convert_tokens_to_ids(tokenized_text)
         return indexed_tokens
-
+    
     def load_batch(self):
-        test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
+        if self.data_format == "ontonote":
+            return self.load_batch_seqlabeling()
+        else:
+            return self.load_batch_pairclassification()
+
+    def load_batch_seqlabeling(self):
+        test_batch, mask_batch, label_batch, token_type_ids_batch = [], [], [], []
+        while True:
+            if not self.start and self.epoch_end():
+                self.start = True
+                break
+            self.start = False
+            instance = self.get_instance()
+            token, label = instance
+            #token.insert(0, "[CLS]")
+            #token.append("[SEP]")
+            assert len(token) == len(label)
+            label.insert(0, self.label_map["O"])
+            label.append(self.label_map["O"])
+            token_index = self.tokenize_index(" ".join(token))
+            #print(token, token_index, label, len(token_index), len(label))
+            assert len(token_index) == len(label)
+            segments_ids = [0] * len(token_index)
+            test_batch.append(torch.tensor(token_index))
+            token_type_ids_batch.append(torch.tensor(segments_ids))
+            mask_batch.append(torch.ones(len(token_index)))
+            label_batch.append(torch.tensor(label))
+            if len(test_batch) >= self.batch_size or self.epoch_end():
+                # Convert inputs to PyTorch tensors
+                tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(self.device)
+                segments_tensor = torch.nn.utils.rnn.pad_sequence(token_type_ids_batch, batch_first=True, padding_value=0).to(self.device)
+                mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
+                label_tensor = torch.nn.utils.rnn.pad_sequence(label_batch, batch_first=True, padding_value=self.label_map["O"]).to(self.device)
+                # label_tensor = torch.tensor(label_batch, device=self.device)
+                assert tokens_tensor.shape == segments_tensor.shape
+                assert tokens_tensor.shape == mask_tensor.shape
+                assert tokens_tensor.shape == label_tensor.shape
+                return (tokens_tensor, segments_tensor, mask_tensor, label_tensor)
+ 
+    def load_batch_pairclassification(self):
+        test_batch, token_type_ids_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
         while True:
             if not self.start and self.epoch_end():
                 self.start = True
@@ -96,17 +163,14 @@ class DataGenerator(object):
                 label, a, b, ID = instance
             else:
                 label, a, b = instance
-            a = "[CLS] " + a + " [SEP]"
             if self.add_url:
-                b = b + " " + url + " [SEP]"
-            else:
-                b = b + " [SEP]"
+                b = b + " " + url
             a_index = self.tokenize_index(a)
             b_index = self.tokenize_index(b)
             combine_index = a_index + b_index
             segments_ids = [0] * len(a_index) + [1] * len(b_index)
             test_batch.append(torch.tensor(combine_index))
-            testqid_batch.append(torch.tensor(segments_ids))
+            token_type_ids_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
             label_batch.append(int(label))
             if len(instance) >= 4:
@@ -118,17 +182,16 @@ class DataGenerator(object):
             if len(test_batch) >= self.batch_size or self.epoch_end():
                 # Convert inputs to PyTorch tensors
                 tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(self.device)
-                segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(self.device)
+                segments_tensor = torch.nn.utils.rnn.pad_sequence(token_type_ids_batch, batch_first=True, padding_value=0).to(self.device)
                 mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
                 label_tensor = torch.tensor(label_batch, device=self.device)
+                test_batch, token_type_ids_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
                 if len(instance) >= 4:
                     qid_tensor = torch.tensor(qid_batch, device=self.device)
                     docid_tensor = torch.tensor(docid_batch, device=self.device)
                     return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
                 else:
                     return (tokens_tensor, segments_tensor, mask_tensor, label_tensor)
-
-                test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
  
         return None 
 
@@ -149,69 +212,4 @@ def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs, da
     
     return optimizer
         
-def evaluate_trec(predictions_file, qrels_file):
-    pargs = shlex.split("/bin/sh run_eval.sh '{}' '{}'".format(qrels_file, predictions_file))
-    p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    pout, perr = p.communicate()
 
-    if sys.version_info[0] < 3:
-        lines = pout.split(b'\n')
-    else:
-        lines = pout.split(b'\n')
-    map = float(lines[0].strip().split()[-1])
-    mrr = float(lines[1].strip().split()[-1])
-    p30 = float(lines[2].strip().split()[-1])
-    return map, mrr, p30
-
-def evaluate_classification(prediction_index_list, labels):
-    acc = get_acc(prediction_index_list, labels)
-    pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
-    return acc, pre, rec, f1
-
-def get_acc(prediction_index_list, labels):
-    acc = sum(np.array(prediction_index_list) == np.array(labels))
-    return acc / (len(labels) + 1e-9)
-
-def get_pre_rec_f1(prediction_index_list, labels):
-    tp, tn, fp, fn = 0, 0, 0, 0
-    # print("prediction_index_list: ", prediction_index_list)
-    # print("labels: ", labels)
-    assert len(prediction_index_list) == len(labels)
-    for p, l in zip(prediction_index_list, labels):
-        if p == l:
-            if p == 1:
-                tp += 1
-            else:
-                tn += 1
-        else:
-            if p == 1:
-                fp += 1
-            else:
-                fn += 1
-    eps = 1e-8
-    precision = tp * 1.0 / (tp + fp + eps)
-    recall = tp * 1.0 / (tp + fn + eps)
-    f1 = 2 * precision * recall / (precision + recall + eps)
-    return precision, recall, f1
-
-def get_p1(prediction_score_list, labels, data_path, data_name, split):
-    f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
-    a2score_label = {}
-    for line, p, l in zip(f, prediction_score_list, labels):
-        label, a, b = line.replace("\n", "").split("\t")
-        if a not in a2score_label:
-            a2score_label[a] = []
-        a2score_label[a].append((p, l))
-    
-    acc = 0
-    no_true = 0
-    for a in a2score_label:
-        a2score_label[a] = sorted(a2score_label[a], key=lambda x: x[0], reverse=True)
-        if a2score_label[a][0][1] > 0:
-            acc += 1
-        if sum([tmp[1] for tmp in a2score_label[a]]) == 0:
-            no_true += 1
-
-    p1 = acc / (len(a2score_label) - no_true)
-    
-    return p1
