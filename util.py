@@ -83,7 +83,6 @@ class DataGenerator(object):
                 else:
                     self.data.append([ls[0], ls[1], " ".join(ls[2:])])
         
-        
         np.random.shuffle(self.data)
         self.i = 0
         self.data_size = len(self.data)
@@ -124,8 +123,8 @@ class DataGenerator(object):
             self.start = False
             instance = self.get_instance()
             token, label = instance
-            #token.insert(0, "[CLS]")
-            #token.append("[SEP]")
+            # This line is important. Otherwise self.data will be modified
+            label = label[:]
             assert len(token) == len(label)
             label.insert(0, self.label_map["O"])
             label.append(self.label_map["O"])
