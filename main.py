@@ -126,6 +126,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
         else:
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
+        # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())

@@ -67,6 +67,10 @@ class DataGenerator(object):
                     label.append(self.label_map[ls[1]])
                     token.append(ls[0])
                 else:
+                    if len(token) > 510:
+                        print("find one sentence with length {} on {} set".format(len(token), split))
+                        token = token[:510]
+                        label = label[:510]
                     self.data.append([token, label])
                     label, token = [], []
             if len(label) > 0:
