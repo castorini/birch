@@ -77,7 +77,16 @@ class DataGenerator(object):
                self.data.append([token, label])
 
             print("label_map: {}".format(self.label_map))
-        
+        elif data_format == "movie":
+            self.f = open(os.path.join(data_path, "{}/{}.tsv".format(data_name, split)))
+            self.label_map = {} if label_map is None else label_map
+            self.f.readline()
+            for l in self.f:
+                ls = l.replace("\n", "").split("\t")
+                rid = ls[0]
+                text = ls[2]
+                label = ls[3] if len(ls) == 4 else 2
+                self.data.append([rid, text, label])
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             for l in self.f:
@@ -116,7 +125,7 @@ class DataGenerator(object):
         if self.data_format == "ontonote":
             return self.load_batch_seqlabeling()
         else:
-            return self.load_batch_pairclassification()
+            return self.load_batch_classification()
 
     def load_batch_seqlabeling(self):
         test_batch, mask_batch, label_batch, token_type_ids_batch = [], [], [], []
@@ -152,7 +161,7 @@ class DataGenerator(object):
                 assert tokens_tensor.shape == label_tensor.shape
                 return (tokens_tensor, segments_tensor, mask_tensor, label_tensor)
  
-    def load_batch_pairclassification(self):
+    def load_batch_classification(self):
         test_batch, token_type_ids_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
         while True:
             if not self.start and self.epoch_end():
@@ -160,28 +169,34 @@ class DataGenerator(object):
                 break
             self.start = False
             instance = self.get_instance()
-            if len(instance) == 5:
-                label, a, b, ID, url = instance
-            elif len(instance) == 4:
-                label, a, b, ID = instance
+            if self.data_format == "movie":
+                rid, text, label = instance
+                combine_index = self.tokenize_index(text)
+                qid_batch.append(rid)
+                segments_ids = [0] * len(combine_index)
             else:
-                label, a, b = instance
-            if self.add_url:
-                b = b + " " + url
-            a_index = self.tokenize_index(a)
-            b_index = self.tokenize_index(b)
-            combine_index = a_index + b_index
-            segments_ids = [0] * len(a_index) + [1] * len(b_index)
+                if len(instance) == 5:
+                    label, a, b, ID, url = instance
+                elif len(instance) == 4:
+                    label, a, b, ID = instance
+                else:
+                    label, a, b = instance
+                if self.add_url:
+                    b = b + " " + url
+                a_index = self.tokenize_index(a)
+                b_index = self.tokenize_index(b)
+                combine_index = a_index + b_index
+                segments_ids = [0] * len(a_index) + [1] * len(b_index)
+                if len(instance) >= 4:
+                    qid, _, docid, _, _, _ = ID.split()
+                    qid = int(qid)
+                    docid = int(docid)
+                    qid_batch.append(qid)
+                    docid_batch.append(docid)
             test_batch.append(torch.tensor(combine_index))
             token_type_ids_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
             label_batch.append(int(label))
-            if len(instance) >= 4:
-                qid, _, docid, _, _, _ = ID.split()
-                qid = int(qid)
-                docid = int(docid)
-                qid_batch.append(qid)
-                docid_batch.append(docid)
             if len(test_batch) >= self.batch_size or self.epoch_end():
                 # Convert inputs to PyTorch tensors
                 tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(self.device)
@@ -189,10 +204,12 @@ class DataGenerator(object):
                 mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
                 label_tensor = torch.tensor(label_batch, device=self.device)
                 test_batch, token_type_ids_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
-                if len(instance) >= 4:
+                if len(qid_batch) >= 0:
                     qid_tensor = torch.tensor(qid_batch, device=self.device)
-                    docid_tensor = torch.tensor(docid_batch, device=self.device)
-                    return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+                    if len(docid_batch) >= 0:
+                        docid_tensor = torch.tensor(docid_batch, device=self.device)
+                        return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+                    return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor)
                 else:
                     return (tokens_tensor, segments_tensor, mask_tensor, label_tensor)
  

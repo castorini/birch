@@ -43,8 +43,8 @@ def train(args):
                 break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch[:4]
             if args.model_type == "BertForNextSentencePrediction" or args.model_type == "BertForQuestionAnswering" \
-                    or args.model_type == "BertForTokenClassification":
-                # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape, label_tensor.shape)
+                    or args.model_type == "BertForTokenClassification" or args.model_type == "BertForSequenceClassification":
+                #print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape, label_tensor.shape)
                 loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
             else:
                 loss, logits = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
@@ -69,8 +69,8 @@ def train(args):
 def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch):
     scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
     print_scores(scores_dev, mode="dev")
-    scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
-    print_scores(scores_test)
+    #scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
+    #print_scores(scores_test)
      
     if scores_dev[1][0] > best_score:
         best_score = scores_dev[1][0]
@@ -122,8 +122,10 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         batch = test_dataset.load_batch()
         if batch is None:
             break
-        if args.data_format == "trec":
+        if len(batch) == 6:
             tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
+        elif len(batch) == 5:
+            tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor = batch
         else:
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
         # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
@@ -148,6 +150,10 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             for token, p, label in zip(tokens, predicted_index, labels):
                 for a, b, c in zip(token, p, label):
                     f.write("{} {} {}\n".format(a, b, c))
+        else:
+            qids = qid_tensor.cpu().detach().numpy()
+            for qid, p in zip(qids, predicted_index):
+                f.write("{} {}\n".format(qid, p))
 
         del predictions
     
