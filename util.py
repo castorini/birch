@@ -80,7 +80,6 @@ class DataGenerator(object):
         elif data_format == "movie":
             self.f = open(os.path.join(data_path, "{}/{}.tsv".format(data_name, split)))
             self.label_map = {} if label_map is None else label_map
-            self.f.readline()
             for l in self.f:
                 ls = l.replace("\n", "").split("\t")
                 rid = ls[0]
@@ -172,7 +171,7 @@ class DataGenerator(object):
             if self.data_format == "movie":
                 rid, text, label = instance
                 combine_index = self.tokenize_index(text)
-                qid_batch.append(rid)
+                qid_batch.append(int(rid))
                 segments_ids = [0] * len(combine_index)
             else:
                 if len(instance) == 5:
@@ -203,10 +202,9 @@ class DataGenerator(object):
                 segments_tensor = torch.nn.utils.rnn.pad_sequence(token_type_ids_batch, batch_first=True, padding_value=0).to(self.device)
                 mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
                 label_tensor = torch.tensor(label_batch, device=self.device)
-                test_batch, token_type_ids_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
-                if len(qid_batch) >= 0:
+                if len(qid_batch) > 0:
                     qid_tensor = torch.tensor(qid_batch, device=self.device)
-                    if len(docid_batch) >= 0:
+                    if len(docid_batch) > 0:
                         docid_tensor = torch.tensor(docid_batch, device=self.device)
                         return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
                     return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor)

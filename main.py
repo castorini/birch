@@ -69,8 +69,8 @@ def train(args):
 def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch):
     scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
     print_scores(scores_dev, mode="dev")
-    #scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
-    #print_scores(scores_test)
+    scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
+    print_scores(scores_test)
      
     if scores_dev[1][0] > best_score:
         best_score = scores_dev[1][0]
@@ -152,8 +152,9 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
                     f.write("{} {} {}\n".format(a, b, c))
         else:
             qids = qid_tensor.cpu().detach().numpy()
+            assert len(qids) == len(predicted_index)
             for qid, p in zip(qids, predicted_index):
-                f.write("{} {}\n".format(qid, p))
+                f.write("{},{}\n".format(qid, p))
 
         del predictions
     
