@@ -147,8 +147,14 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
                 lineno += 1
         elif args.data_format == "ontonote":
             tokens =  tokens_tensor.cpu().detach().numpy()
+            label_map_reverse = {}
+            for k in test_dataset.label_map:
+                label_map_reverse[test_dataset.label_map[k]] = k
             for token, p, label in zip(tokens, predicted_index, labels):
                 for a, b, c in zip(token, p, label):
+                    a = tokenizer.convert_ids_to_tokens([a])[0]
+                    b = label_map_reverse[b]
+                    c = label_map_reverse[c]
                     f.write("{} {} {}\n".format(a, b, c))
         else:
             qids = qid_tensor.cpu().detach().numpy()
