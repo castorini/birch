@@ -108,8 +108,8 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
         epoch, arch, model, tokenizer, scores, label_map = load_checkpoint(args.pytorch_dump_path)
         assert test_dataset is None 
-        print("Load test set")
-        test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device, args.data_format, label_map=label_map)
+        print("Load {} set".format(split))
+        test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device, args.data_format, label_map=label_map)
     
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
@@ -118,6 +118,9 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     qrelf = open(split + '.' + args.qrels_path, "w")
 
     lineno = 1
+    label_map_reverse = {}
+    for k in test_dataset.label_map:
+        label_map_reverse[test_dataset.label_map[k]] = k
     while True:
         batch = test_dataset.load_batch()
         if batch is None:
@@ -135,7 +138,8 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         prediction_index_list += predicted_index
         predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
-        labels.extend(list(label_tensor.cpu().detach().numpy()))
+        label_batch = list(label_tensor.cpu().detach().numpy())
+        labels.extend(label_batch)
         if args.data_format == "trec":
             qids = qid_tensor.cpu().detach().numpy()
             docids = docid_tensor.cpu().detach().numpy()
@@ -147,12 +151,14 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
                 lineno += 1
         elif args.data_format == "ontonote":
             tokens =  tokens_tensor.cpu().detach().numpy()
-            label_map_reverse = {}
-            for k in test_dataset.label_map:
-                label_map_reverse[test_dataset.label_map[k]] = k
-            for token, p, label in zip(tokens, predicted_index, labels):
+            for token, p, label in zip(tokens, predicted_index, label_batch):
+                assert len(token) == len(p)
+                assert len(token) == len(label)
                 for a, b, c in zip(token, p, label):
                     a = tokenizer.convert_ids_to_tokens([a])[0]
+                    if a == "[SEP]":
+                        f.write("\n")
+                        break
                     b = label_map_reverse[b]
                     c = label_map_reverse[c]
                     f.write("{} {} {}\n".format(a, b, c))
