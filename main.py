@@ -148,7 +148,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             else:
                 docids = list(range(lineno, lineno + len(labels)))
             for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
-            	scores, labels):
+            	scores, label_batch):
                 f.write("{}\t{}\n".format(lineno, p))
                 f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
                 qrelf.write("{} 0 {} {}\n".format(qid, docid, label))
