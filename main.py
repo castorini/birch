@@ -121,6 +121,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     label_map_reverse = {}
     for k in test_dataset.label_map:
         label_map_reverse[test_dataset.label_map[k]] = k
+    qid_tensor, docid_tensor = None, None
     while True:
         batch = test_dataset.load_batch()
         if batch is None:
@@ -142,7 +143,10 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         labels.extend(label_batch)
         if args.data_format == "trec":
             qids = qid_tensor.cpu().detach().numpy()
-            docids = docid_tensor.cpu().detach().numpy()
+            if docid_tensor is not None:
+                docids = docid_tensor.cpu().detach().numpy()
+            else:
+                docids = list(range(lineno, lineno + len(labels)))
             for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
             	scores, labels):
                 f.write("{}\t{}\n".format(lineno, p))

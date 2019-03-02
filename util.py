@@ -2,8 +2,6 @@ from tqdm import tqdm
 import random 
 import os
 import numpy as np
-import subprocess
-import shlex
 import sys
 
 import torch
@@ -38,6 +36,7 @@ class DataGenerator(object):
         super(DataGenerator, self).__init__()
         self.data = []
         self.data_format = data_format
+        self.label_map = {} if label_map is None else label_map
         if data_format == "trec":
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
@@ -56,7 +55,6 @@ class DataGenerator(object):
         elif data_format == "ontonote":
             self.f = open(os.path.join(data_path, "{}/{}.char.bmes".format(data_name, split)))
             label, token = [], []
-            self.label_map = {} if label_map is None else label_map
             for l in self.f:
                 ls = l.replace("\n", "").split()
                 if len(ls) > 1:
@@ -96,7 +94,7 @@ class DataGenerator(object):
                     self.data.append([ls[0], ls[1], " ".join(ls[2:])])
         
         np.random.shuffle(self.data)
-        self.i = 0
+        self.data_i = 0
         self.data_size = len(self.data)
         self.add_url = add_url
         self.batch_size = batch_size
@@ -105,12 +103,12 @@ class DataGenerator(object):
         self.start = True
 
     def get_instance(self):
-        ret = self.data[self.i % self.data_size]
-        self.i += 1
+        ret = self.data[self.data_i % self.data_size]
+        self.data_i += 1
         return ret
 
     def epoch_end(self):
-        return self.i % self.data_size == 0
+        return self.data_i % self.data_size == 0
 
     def tokenize_index(self, text):
         tokenized_text = self.tokenizer.tokenize(text)
@@ -187,11 +185,15 @@ class DataGenerator(object):
                 combine_index = a_index + b_index
                 segments_ids = [0] * len(a_index) + [1] * len(b_index)
                 if len(instance) >= 4:
-                    qid, _, docid, _, _, _ = ID.split()
+                    ls = ID.split()
+                    if len(ls) > 1:
+                        qid, _, docid, _, _, _ = ls
+                        docid = int(docid)
+                        docid_batch.append(docid)
+                    else:
+                        qid = ID
                     qid = int(qid)
-                    docid = int(docid)
                     qid_batch.append(qid)
-                    docid_batch.append(docid)
             test_batch.append(torch.tensor(combine_index))
             token_type_ids_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
