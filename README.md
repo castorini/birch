@@ -9,7 +9,9 @@
 |       1500      |  BM25  |  0.66  |     1057.1     |      0.1895     |
 
 ## BERT pretrained with TRECQA+WikiQA
+
 score = Lambda * bm25 + (1.0-Lambda) * (bert_high_sent_1 + bert_high_sent_2/2)
+
 |   MAP  |   Lambda   |
 |:------:|:----------:|
 | 0.2051 |   0  |
