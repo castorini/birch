@@ -18,13 +18,28 @@ def load_nist_qrels():
                 nonrel_dict[topic].append(doc)
     return rel_dict, nonrel_dict, all_dict
 
+def eval_bm25(bm25F):
+    score_dict = defaultdict(dict)
+    with open(bm25F) as bF:
+        for line in bF:
+            _, score, _, _, qid, did, qno, dno = line.strip().split('\t')
+            did = did.split('_')[0]
+            score_dict[qid][did] = float(score)
+    for qid in score_dict:
+        doc_dict = score_dict[qid]
+        doc_dict = sorted(doc_dict.items(), key=operator.itemgetter(1), reverse=True)
+        rank = 1
+        for doc, score in doc_dict:
+            print qid, 'Q0', doc, rank, score, 'BM25'
+            rank+=1
+
 def load_q_doc_bm25(bm25F):
     doc_dict = {}
     q_dict = {}
     score_dict = {}
     with open(bm25F) as bF:
         for line in bF:
-            _, score, q, d, qid, did, qno, dno = line.strip().split('\t')
+            _, score, _, _, qid, did, qno, dno = line.strip().split('\t')
             doc_dict[dno] = did
             q_dict[qno] = qid
             score_dict[(qno,did.split('_')[0])] = float(score)
@@ -34,7 +49,7 @@ def load_q_doc_bert(bertF, doc_dict, q_dict, bm25_dict, topK, w):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
-            q, _, d, _, score, _ = line.strip().split()
+            q, _, d, _, score, _, _ = line.strip().split()
             sent = doc_dict[d]
             doc = sent.split('_')[0]
             score = float(score)
@@ -71,7 +86,8 @@ def main():
     w = float(sys.argv[2])
     rel_dict, nonrel_dict, all_dict = load_nist_qrels()
     doc_dict, q_dict, score_dict = load_q_doc_bm25('robust04_bm25_test.csv')
-    load_q_doc_bert('prediction.trec_tweet_title', doc_dict, q_dict,
+    # eval_bm25('robust04_bm25_test.csv')
+    load_q_doc_bert('predict.trec_robust04_bm25_qa', doc_dict, q_dict,
     	score_dict, 2, w)
 
 if __name__ == "__main__":

@@ -76,7 +76,7 @@ def get_qid2query(ftopic):
 def parse_doc_from_index(doc):
     return doc
 
-def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids, K=100):
+def search_document(searcher, prediction_fn, qid2text, output_fn, qid2reldocids, K=1000):
     # f = open(prediction_fn, "w")
     out = open(output_fn, "w")
     method = "rm3"
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     ftopic = "../src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
     qid2text = get_qid2query(ftopic)
     prediction_fn = "predict_robust04_bm25.txt"
-    output_fn = "robust04_bm25.txt"
+    output_fn = "robust04_bm25_1000.txt"
     index_path="/tuna1/indexes/lucene-index.robust04.pos+docvectors+rawdocs"
     searcher = build_searcher(index_path=index_path,rm3=True)
     # searcher = build_searcher()
