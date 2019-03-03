@@ -10,7 +10,8 @@
 
 ## BERT pretrained with TRECQA+WikiQA
 
-score = Lambda * bm25 + (1.0-Lambda) * (bert_high_sent_1 + bert_high_sent_2/2)
+score = Lambda * bm25_rm3 + (1.0-Lambda) * (bert_high_sent_1 +
+bert_high_sent_2/2)
 
 |   MAP  |   Lambda   |
 |:------:|:----------:|
@@ -39,6 +40,9 @@ score = Lambda * bm25 + (1.0-Lambda) * (bert_high_sent_1 + bert_high_sent_2/2)
 
 ## BERT pretrained with Tweets
 
+score = Lambda * bm25_rm3 + (1.0-Lambda) * (bert_high_sent_1 +
+bert_high_sent_2/2)
+
 |   MAP  |   Lambda   |
 |:------:|:----------:|
 | 0.2378 | 0    |
@@ -62,3 +66,8 @@ score = Lambda * bm25 + (1.0-Lambda) * (bert_high_sent_1 + bert_high_sent_2/2)
 | 0.2515 | 0.9  |
 | 0.2489 | 0.95 |
 | 0.2451 | 1    |
+
+## TODO
+
+* Combine BERT scores from tweet and trec_wiki_qa
+* re-rank from top BM25+RM3 100 to top 1000 documents
