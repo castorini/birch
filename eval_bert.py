@@ -49,7 +49,7 @@ def load_q_doc_bert(bertF, doc_dict, q_dict, bm25_dict, topK, w):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
-            q, _, d, _, score, _, _ = line.strip().split()
+            q, _, d, _, score, _ = line.strip().split()
             sent = doc_dict[d]
             doc = sent.split('_')[0]
             score = float(score)
@@ -87,7 +87,7 @@ def main():
     rel_dict, nonrel_dict, all_dict = load_nist_qrels()
     doc_dict, q_dict, score_dict = load_q_doc_bm25('robust04_bm25_test.csv')
     # eval_bm25('robust04_bm25_test.csv')
-    load_q_doc_bert('predict.trec_robust04_bm25_qa', doc_dict, q_dict,
+    load_q_doc_bert('prediction.trec_tweet_title', doc_dict, q_dict,
     	score_dict, 2, w)
 
 if __name__ == "__main__":
