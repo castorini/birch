@@ -136,11 +136,11 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
-        prediction_index_list += predicted_index
         predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
         label_batch = list(label_tensor.cpu().detach().numpy())
-        labels.extend(label_batch)
+        label_new = []
+        predicted_index_new = []
         if args.data_format == "trec":
             qids = qid_tensor.cpu().detach().numpy()
             if docid_tensor is not None:
@@ -158,20 +158,30 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             for token, p, label in zip(tokens, predicted_index, label_batch):
                 assert len(token) == len(p)
                 assert len(token) == len(label)
+                predicted_index_tmp = []
+                label_tmp = []
                 for a, b, c in zip(token, p, label):
                     a = tokenizer.convert_ids_to_tokens([a])[0]
                     if a == "[SEP]":
                         f.write("\n")
                         break
+                    predicted_index_tmp.append(b)
+                    label_tmp.append(c)
                     b = label_map_reverse[b]
                     c = label_map_reverse[c]
                     f.write("{} {} {}\n".format(a, b, c))
+                predicted_index_new.append(predicted_index_tmp)
+                label_new.append(label_tmp)
         else:
             qids = qid_tensor.cpu().detach().numpy()
             assert len(qids) == len(predicted_index)
             for qid, p in zip(qids, predicted_index):
                 f.write("{},{}\n".format(qid, p))
 
+        label_new = label_new if len(label_new) > 0 else label_batch
+        predicted_index_new = predicted_index_new if len(predicted_index_new) > 0 else predicted_index
+        labels.extend(label_new)
+        prediction_index_list += predicted_index_new
         del predictions
     
     f.close()
@@ -188,7 +198,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         acc, pre, rec, f1 = evaluate_ner(prediction_index_list, labels, test_dataset.label_map)
     else:
         acc, pre, rec, f1 = evaluate_classification(prediction_index_list, labels)
-    return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
+    return [["f1", "acc", "precision", "recall"], [f1, acc, pre, rec]]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
