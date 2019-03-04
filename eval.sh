@@ -1,6 +1,6 @@
 #!/bin/csh -f
 for i in `seq 0 0.05 1.05`;
-# for i in 1 ;
+# for i in 0.5 ;
 do
 	python eval_bert.py 2 $i > "run.robust04.bert.tweet.top$i.txt"
 	judgement=qrels.robust2004.txt
