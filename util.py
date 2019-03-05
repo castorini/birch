@@ -88,10 +88,12 @@ class DataGenerator(object):
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             for l in self.f:
                 ls = l.replace("\n", "").split("\t")
-                if len(ls) == 3:
-                    self.data.append(ls)
-                else:
-                    self.data.append([ls[0], ls[1], " ".join(ls[2:])])
+                label = ls[0]
+                query = ls[2]
+                doc = ls[3]
+                qid = ls[6]
+                docid = ls[7]
+                self.data.append([label, query, doc, qid, docid])
         
         np.random.shuffle(self.data)
         self.data_i = 0
@@ -172,28 +174,37 @@ class DataGenerator(object):
                 qid_batch.append(int(rid))
                 segments_ids = [0] * len(combine_index)
             else:
-                if len(instance) == 5:
-                    label, a, b, ID, url = instance
-                elif len(instance) == 4:
-                    label, a, b, ID = instance
+                if self.data_format == "robust04":
+                    label, a, b, qid, docid = instance
+                    qid = int(qid)
+                    docid = int(docid)
+                    qid_batch.append(qid)
+                    docid_batch.append(docid)
                 else:
-                    label, a, b = instance
-                if self.add_url:
-                    b = b + " " + url
+                    if len(instance) == 5:
+                        label, a, b, ID, url = instance
+                    elif len(instance) == 4:
+                        label, a, b, ID = instance
+                    else:
+                        label, a, b = instance
+                    if self.add_url:
+                        b = b + " " + url
+                    if len(instance) >= 4:
+                        ls = ID.split()
+                        if len(ls) > 1:
+                            qid, _, docid, _, _, _ = ls
+                            docid = int(docid)
+                            docid_batch.append(docid)
+                        else:
+                            qid = ID
+                        qid = int(qid)
+                        qid_batch.append(qid)
                 a_index = self.tokenize_index(a)
                 b_index = self.tokenize_index(b)
                 combine_index = a_index + b_index
                 segments_ids = [0] * len(a_index) + [1] * len(b_index)
-                if len(instance) >= 4:
-                    ls = ID.split()
-                    if len(ls) > 1:
-                        qid, _, docid, _, _, _ = ls
-                        docid = int(docid)
-                        docid_batch.append(docid)
-                    else:
-                        qid = ID
-                    qid = int(qid)
-                    qid_batch.append(qid)
+                combine_index = combine_index[:510]
+                segments_ids = segments_ids[:510]
             test_batch.append(torch.tensor(combine_index))
             token_type_ids_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))

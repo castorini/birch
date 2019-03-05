@@ -132,7 +132,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor = batch
         else:
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
-        # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
+        #print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
@@ -146,7 +146,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             if docid_tensor is not None:
                 docids = docid_tensor.cpu().detach().numpy()
             else:
-                docids = list(range(lineno, lineno + len(labels)))
+                docids = list(range(lineno, lineno + len(label_batch)))
             for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
             	scores, label_batch):
                 f.write("{}\t{}\n".format(lineno, p))
@@ -172,11 +172,22 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
                     f.write("{} {} {}\n".format(a, b, c))
                 predicted_index_new.append(predicted_index_tmp)
                 label_new.append(label_tmp)
-        else:
+        elif args.data_format == "robust04":
             qids = qid_tensor.cpu().detach().numpy()
+            docids = docid_tensor.cpu().detach().numpy()
             assert len(qids) == len(predicted_index)
-            for qid, p in zip(qids, predicted_index):
-                f.write("{},{}\n".format(qid, p))
+            for p, l, s, qid, docid in zip(predicted_index, label_batch, scores, qids, docids):
+                f.write("{} Q0 {} {} {} bert {}\n".format(qid, docid, lineno, s[1], l))
+                lineno += 1
+
+        else:
+            if qid_tensor is None:
+                qids = list(range(lineno, lineno + len(label_batch)))
+            else:
+                qids = qid_tensor.cpu().detach().numpy()
+            assert len(qids) == len(predicted_index)
+            for qid, p, l, s, docid in zip(qids, predicted_index, label_batch):
+                f.write("{},{},{}\n".format(qid, p, l))
 
         label_new = label_new if len(label_new) > 0 else label_batch
         predicted_index_new = predicted_index_new if len(predicted_index_new) > 0 else predicted_index
