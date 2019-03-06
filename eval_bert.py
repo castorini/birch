@@ -18,18 +18,20 @@ def load_nist_qrels():
                 nonrel_dict[topic].append(doc)
     return rel_dict, nonrel_dict, all_dict
 
-def eval_bm25(bm25F, topK = 100):
+def eval_bm25(bm25F, topK = 1000):
     doc_score_dict = defaultdict(dict)
+    doc_label_dict = defaultdict(dict)
     top_doc_dict = defaultdict(list)
     sent_dict = {}
     q_dict = {}
     with open(bm25F) as bF:
         for line in bF:
-            _, score, qid, sid, qno, dno = line.strip().split('\t')
+            label, score, qid, sid, qno, dno = line.strip().split('\t')
             sent_dict[dno] = sid
             q_dict[qno] = qid
             did = sid.split('_')[0]
             doc_score_dict[qid][did] = float(score)
+            doc_label_dict[qid][did] = int(label)
     for qid in doc_score_dict:
         doc_dict = doc_score_dict[qid]
         doc_dict = sorted(doc_dict.items(), key=operator.itemgetter(1), reverse=True)
@@ -42,16 +44,18 @@ def eval_bm25(bm25F, topK = 100):
             rank+=1
     for qid in top_doc_dict:
         assert(len(top_doc_dict[qid]) == topK)
-    return top_doc_dict, doc_score_dict, sent_dict, q_dict
+    return top_doc_dict, doc_score_dict, sent_dict, q_dict, doc_label_dict
 
-def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict, bm25_dict, topK, w):
+def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict, 
+    bm25_dict, label_dict, topK, beta, w):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
-            q, _, d, _, score, _ = line.strip().split()
+            q, _, d, _, score, _, _ = line.strip().split()
             q = q_dict[q]
             sent = sent_dict[d]
             doc = sent.split('_')[0]
+            # print q, sent, doc, score, bm25_dict[q][doc], label_dict[q][doc]
             score = float(score)
             if doc not in score_dict[q]:
                 score_dict[q][doc] = [score]
@@ -59,7 +63,7 @@ def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict, bm25_dict, topK, w):
                 score_dict[q][doc].append(score)
     for q in top_doc_dict:
         doc_score_dict = {}
-        assert(len(top_doc_dict[q]) == 100)
+        assert(len(top_doc_dict[q]) == 1000)
         for d in top_doc_dict[q]:
             scores = score_dict[q][d]
             scores.sort(reverse=True)
@@ -67,12 +71,13 @@ def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict, bm25_dict, topK, w):
             sum_score = 0
             score_list = []
             rank = 1.0
-            for s in scores[:topK]:
+            weight_list = [1, w]
+            for s, we in zip(scores[:topK], weight_list[:topK]):
                 score_list.append(s)
-                sum_score += s / rank
+                sum_score += s * we
                 rank += 1
             # doc_dict[d] = w * bm25_dict[(q,d)]
-            doc_score_dict[d] = w * bm25_dict[q][d] + (1.0-w) * sum_score
+            doc_score_dict[d] = beta * bm25_dict[q][d] + (1.0-beta) * sum_score
             # for s in scores:
             #     if s > 1:
             #         sum_score += s
@@ -81,7 +86,6 @@ def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict, bm25_dict, topK, w):
             #     doc_dict[d] = w * bm25_dict[(q,d)]
             # else:
             #     doc_dict[d] = w * bm25_dict[(q,d)] + (1.0-w) * np.mean(score_list)
-
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
@@ -90,13 +94,17 @@ def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict, bm25_dict, topK, w):
 
 def main():
     topK = int(sys.argv[1])
-    w = float(sys.argv[2])
+    beta = float(sys.argv[2])
+    w = float(sys.argv[3])
+
     rel_dict, nonrel_dict, all_dict = load_nist_qrels()
     # doc_dict, q_dict, score_dict = load_q_doc_bm25('robust04_bm25_1000_fields.txt')
-    top_doc_dict, doc_bm25_dict, sent_dict, q_dict = eval_bm25('robust04_bm25_1000_fields.txt')
+    top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
+        eval_bm25('robust04_bm25_1000_fields.txt')
 
-    load_q_doc_bert('prediction.trec.1000', top_doc_dict, sent_dict,q_dict,
-        doc_bm25_dict, topK, w)
+    load_q_doc_bert('predict.trec_robust04_bm25+rm3_mb', 
+        top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
+        beta, w)
 
 if __name__ == "__main__":
     main()
