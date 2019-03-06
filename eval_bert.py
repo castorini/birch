@@ -18,7 +18,7 @@ def load_nist_qrels():
                 nonrel_dict[topic].append(doc)
     return rel_dict, nonrel_dict, all_dict
 
-def eval_bm25(bm25F, topK = 1000):
+def eval_bm25(bm25F, topK = 100):
     doc_score_dict = defaultdict(dict)
     doc_label_dict = defaultdict(dict)
     top_doc_dict = defaultdict(list)
@@ -63,7 +63,7 @@ def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict,
                 score_dict[q][doc].append(score)
     for q in top_doc_dict:
         doc_score_dict = {}
-        assert(len(top_doc_dict[q]) == 1000)
+        assert(len(top_doc_dict[q]) == 100)
         for d in top_doc_dict[q]:
             scores = score_dict[q][d]
             scores.sort(reverse=True)
