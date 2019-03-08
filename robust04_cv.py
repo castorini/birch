@@ -94,6 +94,7 @@ def search_document(topics, searcher, prediction_fn, qid2text, qid2desc,
             b = "".join(filter(lambda x: x in printable, b))
             clean_b = clean_html(b)
             sent_id = 0
+            # f.write("{} 0 {} 0 {} {}\n".format(qid, docno, sim, method))
             for sentence in tokenizer.tokenize(clean_b):
                 if len(sentence.strip().split()) > 512:
                     seq_list = chunk_sent(sentence, 512)
@@ -177,7 +178,9 @@ if __name__ == '__main__':
     qidx, didx = 1, 1
     for topics, p in zip(folds, params):
         a, b, c, d, e = map(float, p.strip().split())
-        searcher = build_searcher(a,b,c,d,e,index_path=index_path, rm3=True)
+        searcher = build_searcher(k1=a, b=b,
+            fbTerms=c, fbDocs=d, originalQueryWeight=e,
+            index_path=index_path, rm3=True)
         # searcher = build_searcher()
         qidx, didx = search_document(topics, searcher, 
             prediction_fn+str(folder_idx), 
