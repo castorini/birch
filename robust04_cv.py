@@ -78,11 +78,10 @@ def parse_doc_from_index(doc):
     return doc
 
 def search_document(topics, searcher, prediction_fn, qid2text, qid2desc,
-   output_fn, qid2reldocids, K=1000):
+   output_fn, qid2reldocids, qidx, didx, K=1000):
     # f = open(prediction_fn, "w")
     out = open(output_fn, "w")
     method = "rm3"
-    qidx, didx = 0, 0
     for qid in topics:
         a = qid2text[qid]
         desc = qid2desc[qid]
@@ -116,6 +115,7 @@ def search_document(topics, searcher, prediction_fn, qid2text, qid2desc,
         qidx += 1
     # f.close()
     out.close()
+    return qidx, didx
 
 def get_qid2reldocids(fqrel):
     f = open(fqrel)
@@ -166,7 +166,6 @@ if __name__ == '__main__':
     with open('robust04-paper2-folds-map-params.json') as f:
         params = json.load(f)
 
-
     qid2reldocids = get_qid2reldocids(fqrel)
     ftopic = "../src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
     qid2text = get_qid2query(ftopic)
@@ -175,11 +174,14 @@ if __name__ == '__main__':
     output_fn = "robust04_bm25_rm3_cv.txt"
     index_path="/tuna1/indexes/lucene-index.robust04.pos+docvectors+rawdocs"
     folder_idx = 1
+    qidx, didx = 1, 1
     for topics, p in zip(folds, params):
         a, b, c, d, e = map(float, p.strip().split())
         searcher = build_searcher(a,b,c,d,e,index_path=index_path, rm3=True)
         # searcher = build_searcher()
-        search_document(topics, searcher, prediction_fn+str(folder_idx), 
-            qid2text, qid2desc, output_fn+str(folder_idx), qid2reldocids)
+        qidx, didx = search_document(topics, searcher, 
+            prediction_fn+str(folder_idx), 
+            qid2text, qid2desc, output_fn+str(folder_idx), qid2reldocids,
+            qidx, didx, 1000)
         folder_idx += 1
         # cal_score(prediction=prediction_fn)
