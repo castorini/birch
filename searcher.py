@@ -8,13 +8,16 @@ from jnius import autoclass
 JString = autoclass('java.lang.String')
 JSearcher = autoclass('io.anserini.search.SimpleSearcher')
 
-def build_searcher(k1=0.9, b=0.4, index_path="index/lucene-index.robust04.pos+docvectors+rawdocs", rm3=False, chinese=False):
+def build_searcher(k1=0.9, b=0.4,
+    fbTerms=10, fbDocs=10, originalQueryWeight=0.5, 
+    index_path="index/lucene-index.robust04.pos+docvectors+rawdocs", 
+    rm3=False, chinese=False):
     searcher = JSearcher(JString(index_path))
     searcher.setBM25Similarity(k1, b)
     if not rm3:
         searcher.setDefaultReranker()
     else:
-        searcher.setRM3Reranker()
+        searcher.setRM3Reranker(fbTerms, fbDocs, originalQueryWeight, False)
     return searcher
 
 def answerini_retriever(query, searcher, para_num=20):
