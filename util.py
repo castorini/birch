@@ -86,13 +86,23 @@ class DataGenerator(object):
                 self.data.append([rid, text, label])
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
+            first = True
             for l in self.f:
                 ls = l.replace("\n", "").split("\t")
+                if len(ls) < 7:
+                    print(l)
                 label = ls[0]
                 query = ls[2]
                 doc = ls[3]
                 qid = ls[6]
                 docid = ls[7]
+                if first:
+                    first = False
+                    print("label: {}".format(label))
+                    print("query: {}".format(query))
+                    print("doc: {}".format(doc))
+                    print("qid: {}".format(qid))
+                    print("docid: {}".format(docid))
                 self.data.append([label, query, doc, qid, docid])
         
         np.random.shuffle(self.data)
@@ -119,7 +129,19 @@ class DataGenerator(object):
         # Convert token to vocabulary indices
         indexed_tokens = self.tokenizer.convert_tokens_to_ids(tokenized_text)
         return indexed_tokens
-    
+
+    def tokenize_two(self, a, b):
+        b_index = self.tokenize_index(b)
+        tokenized_text_a = ["[CLS]"] + self.tokenizer.tokenize(a) + ["[SEP]"]
+        tokenized_text_b = self.tokenizer.tokenize(b)
+        tokenized_text_b = tokenized_text_b[:510-len(tokenized_text_a)]
+        tokenized_text_b.append("[SEP]")
+        segments_ids = [0] * len(tokenized_text_a) + [1] * len(tokenized_text_b)
+        tokenized_text = tokenized_text_a + tokenized_text_b
+        # Convert token to vocabulary indices
+        indexed_tokens = self.tokenizer.convert_tokens_to_ids(tokenized_text)
+        return indexed_tokens, segments_ids
+
     def load_batch(self):
         if self.data_format == "ontonote":
             return self.load_batch_seqlabeling()
@@ -199,12 +221,7 @@ class DataGenerator(object):
                             qid = ID
                         qid = int(qid)
                         qid_batch.append(qid)
-                a_index = self.tokenize_index(a)
-                b_index = self.tokenize_index(b)
-                combine_index = a_index + b_index
-                segments_ids = [0] * len(a_index) + [1] * len(b_index)
-                combine_index = combine_index[:510]
-                segments_ids = segments_ids[:510]
+                combine_index, segments_ids = self.tokenize_two(a, b)
             test_batch.append(torch.tensor(combine_index))
             token_type_ids_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
