@@ -44,7 +44,7 @@ def LR(X_train, X_test, y_train, y_test):
     pos_scores = []
     for pair in scores:
         pos_scores.append(pair[1])
-    print clf.coef_
+    # print clf.coef_
     # print('The accuracy of the model is',metrics.accuracy_score(predn,y_test))
     return pos_scores
 

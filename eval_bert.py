@@ -2,6 +2,7 @@ from collections import defaultdict
 import numpy as np
 import operator
 import sys
+import json
 
 def load_nist_qrels():
     rel_dict = defaultdict(list) 
@@ -18,7 +19,7 @@ def load_nist_qrels():
                 nonrel_dict[topic].append(doc)
     return rel_dict, nonrel_dict, all_dict
 
-def eval_bm25(bm25F, topK = 100):
+def eval_bm25(bm25F, topK = 1000):
     doc_score_dict = defaultdict(dict)
     doc_label_dict = defaultdict(dict)
     top_doc_dict = defaultdict(list)
@@ -46,8 +47,8 @@ def eval_bm25(bm25F, topK = 100):
         assert(len(top_doc_dict[qid]) == topK)
     return top_doc_dict, doc_score_dict, sent_dict, q_dict, doc_label_dict
 
-def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict, 
-    bm25_dict, label_dict, topK, beta, w):
+def load_q_doc_bert(bertF, topics, top_doc_dict, sent_dict, q_dict, 
+        bm25_dict, label_dict, topKSent, beta, w):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
@@ -61,21 +62,28 @@ def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict,
                 score_dict[q][doc] = [score]
             else:
                 score_dict[q][doc].append(score)
-    for q in top_doc_dict:
+    # max_score_sents = 100
+    for q in topics:
         doc_score_dict = {}
-        assert(len(top_doc_dict[q]) == 100)
+        assert(len(top_doc_dict[q]) == 1000)
         for d in top_doc_dict[q]:
             scores = score_dict[q][d]
             scores.sort(reverse=True)
-            # assert(len(scores) > 5) 
+
+            # while len(scores) < max_score_sents:
+            #     scores.append(-5)
+            # scores = scores[:max_score_sents]
+            # print q, d, label_dict[q][d], bm25_dict[q][d], \
+                # ' '.join(map(str, scores))
             sum_score = 0
             score_list = []
-            rank = 1.0
+            # rank = 1.0
             weight_list = [1, w]
-            for s, we in zip(scores[:topK], weight_list[:topK]):
+
+            for s, we in zip(scores[:topKSent], weight_list[:topKSent]):
                 score_list.append(s)
                 sum_score += s * we
-                rank += 1
+                # rank += 1
             # doc_dict[d] = w * bm25_dict[(q,d)]
             doc_score_dict[d] = beta * bm25_dict[q][d] + (1.0-beta) * sum_score
             # for s in scores:
@@ -92,17 +100,27 @@ def load_q_doc_bert(bertF, top_doc_dict, sent_dict, q_dict,
             print q, 'Q0', doc, rank, score, 'BM25'
             rank+=1
 
+
 def main():
     topK = int(sys.argv[1])
     beta = float(sys.argv[2])
     w = float(sys.argv[3])
+    test_set = int(sys.argv[4])
+    train_topics = []
+
+    with open('robust04-paper2-folds.json') as f:
+        folds = json.load(f)
+    for i in range(0, len(folds)):
+        if i != test_set:
+            train_topics.extend(folds[i])
+
+    assert(len(train_topics) == 200)
 
     rel_dict, nonrel_dict, all_dict = load_nist_qrels()
-    # doc_dict, q_dict, score_dict = load_q_doc_bm25('robust04_bm25_1000_fields.txt')
     top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-        eval_bm25('robust04_bm25_1000_fields.txt')
+        eval_bm25('robust04_bm25_rm3_cv_sent_fields.txt')
 
-    load_q_doc_bert('predict.trec_robust04_bm25+rm3_mb', 
+    load_q_doc_bert('predict.trec.rm3.cv.txt', train_topics,
         top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
         beta, w)
 
