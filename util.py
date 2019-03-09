@@ -84,6 +84,22 @@ class DataGenerator(object):
                 text = ls[2]
                 label = ls[3] if len(ls) == 4 else 2
                 self.data.append([rid, text, label])
+        elif data_format == "glue":
+            self.f = open(os.path.join(data_path, "{}/{}.tsv".format(data_name, split)))
+            first = True
+            f.readline()
+            for l in self.f:
+                ls = l.replace("\n", "").split("\t")
+                assert len(ls) == 10
+                query = ls[-3]
+                doc = ls[-2]
+                label = ls[-1]
+                if first:
+                    first = False
+                    print("label: {}".format(label))
+                    print("query: {}".format(query))
+                    print("doc: {}".format(doc))
+                self.data.append([label, query, doc])
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             first = True
@@ -190,12 +206,12 @@ class DataGenerator(object):
                 break
             self.start = False
             instance = self.get_instance()
-            if self.data_format == "movie":
+            if self.data_format == "movie": # single sentence classification
                 rid, text, label = instance
                 combine_index = self.tokenize_index(text)
                 qid_batch.append(int(rid))
                 segments_ids = [0] * len(combine_index)
-            else:
+            else: # sentence pair classification
                 if self.data_format == "robust04":
                     label, a, b, qid, docid = instance
                     qid = int(qid)
