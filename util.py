@@ -192,7 +192,6 @@ class DataGenerator(object):
                 segments_tensor = torch.nn.utils.rnn.pad_sequence(token_type_ids_batch, batch_first=True, padding_value=0).to(self.device)
                 mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
                 label_tensor = torch.nn.utils.rnn.pad_sequence(label_batch, batch_first=True, padding_value=self.label_map["O"]).to(self.device)
-                # label_tensor = torch.tensor(label_batch, device=self.device)
                 assert tokens_tensor.shape == segments_tensor.shape
                 assert tokens_tensor.shape == mask_tensor.shape
                 assert tokens_tensor.shape == label_tensor.shape

@@ -179,7 +179,6 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             for p, l, s, qid, docid in zip(predicted_index, label_batch, scores, qids, docids):
                 f.write("{} Q0 {} {} {} bert {}\n".format(qid, docid, lineno, s[1], l))
                 lineno += 1
-
         else:
             if qid_tensor is None:
                 qids = list(range(lineno, lineno + len(label_batch)))

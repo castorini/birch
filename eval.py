@@ -229,7 +229,9 @@ def get_ner_BIO(label_list):
 
 
 def evaluate_trec(predictions_file, qrels_file):
-    pargs = shlex.split("/bin/sh run_eval.sh '{}' '{}'".format(qrels_file, predictions_file))
+    cmd = "eval/trec_eval.9.0.4/trec_eval {judgement} {output} -m map -m recip_rank -m P.30".format(judgement=qrels_file, output=predictions_file)
+    pargs = shlex.split(cmd)
+    print("running {}".format(cmd))
     p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pout, perr = p.communicate()
 
