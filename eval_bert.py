@@ -107,10 +107,11 @@ def main():
     w = float(sys.argv[3])
     test_set = int(sys.argv[4])
     
-    train_topics,test_topics = [], []
+    train_topics,test_topics,all_topics = [], [], []
     with open('robust04-paper2-folds.json') as f:
         folds = json.load(f)
     for i in range(0, len(folds)):
+        all_topics.extend(folds[i])
         if i != test_set:
             train_topics.extend(folds[i])
         else:
@@ -125,13 +126,13 @@ def main():
         eval_bm25('robust04_bm25_rm3_cv_sent_fields.txt')
 
     #train
-    load_q_doc_bert('predict.trec.rm3.cv.txt', train_topics,
-        top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
-        beta, w)
-    #test
-    # load_q_doc_bert('predict.trec.rm3.cv.txt', test_topics,
+    # load_q_doc_bert('predict.MB', train_topics,
     #     top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
     #     beta, w)
+    #test
+    load_q_doc_bert('predict.MB', test_topics,
+        top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
+        beta, w)
 
 if __name__ == "__main__":
     main()
