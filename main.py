@@ -66,6 +66,21 @@ def train(args):
     print_scores(scores)
 
 
+def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch):
+    scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
+    print_scores(scores_dev, mode="dev")
+    scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
+    print_scores(scores_test)
+
+    if scores_dev[1][0] > best_score:
+        best_score = scores_dev[1][0]
+        # Save pytorch-model
+        model_path = "{}_{}".format(model_path, epoch)
+        print("Save PyTorch model to {}".format(model_path))
+        save_checkpoint(epoch, arch, model, tokenizer, scores_dev, model_path, test_dataset.label_map)
+
+    return best_score
+
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
         epoch, arch, model, tokenizer, scores, label_map = load_checkpoint(args.pytorch_dump_path)
