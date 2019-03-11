@@ -47,8 +47,8 @@ def eval_bm25(bm25F, topK = 1000):
         assert(len(top_doc_dict[qid]) == topK)
     return top_doc_dict, doc_score_dict, sent_dict, q_dict, doc_label_dict
 
-def load_q_doc_bert(bertF, topics, top_doc_dict, sent_dict, q_dict, 
-        bm25_dict, label_dict, topKSent, beta, w):
+def calc_q_doc_bert(bertF, runF, topics, top_doc_dict, sent_dict, q_dict, 
+        bm25_dict, label_dict, topKSent,alpha, beta):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
@@ -62,7 +62,8 @@ def load_q_doc_bert(bertF, topics, top_doc_dict, sent_dict, q_dict,
                 score_dict[q][doc] = [score]
             else:
                 score_dict[q][doc].append(score)
-    # max_score_sents = 100
+    
+    run_file = open(runF, "w")
     for q in topics:
         doc_score_dict = {}
         assert(len(top_doc_dict[q]) == 1000)
@@ -78,14 +79,16 @@ def load_q_doc_bert(bertF, topics, top_doc_dict, sent_dict, q_dict,
             sum_score = 0
             score_list = []
             # rank = 1.0
-            weight_list = [1, w]
+            weight_list = [1, beta]
 
-            for s, we in zip(scores[:topKSent], weight_list[:topKSent]):
+            for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
                 score_list.append(s)
-                sum_score += s * we
+                sum_score += s * w
                 # rank += 1
             # doc_dict[d] = w * bm25_dict[(q,d)]
-            doc_score_dict[d] = beta * bm25_dict[q][d] + (1.0-beta) * sum_score
+            doc_score_dict[d] = alpha * bm25_dict[q][d]+ (1.0-alpha) * sum_score
+            # doc_score_dict[d] = np.mean(scores)
+            # doc_score_dict[d] = sum(scores)
             # for s in scores:
             #     if s > 1:
             #         sum_score += s
@@ -97,16 +100,19 @@ def load_q_doc_bert(bertF, topics, top_doc_dict, sent_dict, q_dict,
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
-            print q, 'Q0', doc, rank, score, 'BM25'
+            # print q, 'Q0', doc, rank, score, 'BM25'
+            run_file.write("{} Q0 {} {} {} BERT\n".format(q, doc, rank, score))
             rank+=1
+    run_file.close()
 
 
 def main():
     topK = int(sys.argv[1])
-    beta = float(sys.argv[2])
-    w = float(sys.argv[3])
+    alpha = float(sys.argv[2])
+    beta = float(sys.argv[3])
     test_set = int(sys.argv[4])
-    
+    mode = sys.argv[5]
+
     train_topics,test_topics,all_topics = [], [], []
     with open('robust04-paper2-folds.json') as f:
         folds = json.load(f)
@@ -125,14 +131,19 @@ def main():
     top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
         eval_bm25('robust04_bm25_rm3_cv_sent_fields.txt')
 
-    #train
-    # load_q_doc_bert('predict.MB', train_topics,
-    #     top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
-    #     beta, w)
-    #test
-    load_q_doc_bert('predict.MB', test_topics,
-        top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
-        beta, w)
+    if mode == 'train':
+        calc_q_doc_bert('predict.MB', 'run.MB.cv', train_topics,
+            top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
+            alpha, beta)
+    elif mode == 'test':
+        calc_q_doc_bert('predict.MB', 'run.MB.cv.'+str(test_set), test_topics,
+            top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
+            alpha, beta)
+    else:
+        calc_q_doc_bert('predict.MB', 'run.MB.cv', all_topics,
+            top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
+            alpha, beta)
+
 
 if __name__ == "__main__":
     main()
