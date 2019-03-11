@@ -104,6 +104,20 @@ class DataGenerator(object):
                     print("query: {}".format(query))
                     print("doc: {}".format(doc))
                 self.data.append([label, query, doc])
+        elif self.data_format == "classification":
+            self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
+            first = True
+            for l in self.f:
+                ls = l.replace("\n", "").split("\t")
+                label = ls[0]
+                query = ls[1]
+                doc = ls[2]
+                if first:
+                    first = False
+                    print("label: {}".format(label))
+                    print("query: {}".format(query))
+                    print("doc: {}".format(doc))
+                self.data.append([label, query, doc])
         else:
             self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             first = True
@@ -244,7 +258,7 @@ class DataGenerator(object):
             test_batch.append(torch.tensor(combine_index))
             token_type_ids_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
-            if self.data_format == "glue":
+            if self.data_format == "glue" or self.data_format == "classification":
                 label_batch.append(float(label))
             else:
                 label_batch.append(int(label))

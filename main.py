@@ -128,14 +128,10 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         else:
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
         #print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
-        try:
-            predictions = model(tokens_tensor, segments_tensor, mask_tensor)
-        except Exception as e:
-            print(tokens_tensor, segments_tensor, mask_tensor)
-            raise(e)
+        predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
-        if args.data_format == "glue":
+        if args.data_format == "glue" or args.data_format == "classification":
             predicted_score = list(predictions[:, 0].cpu().detach().numpy())
         else:
             predicted_score = list(predictions[:, 1].cpu().detach().numpy())
