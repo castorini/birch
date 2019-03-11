@@ -42,12 +42,7 @@ def train(args):
             if batch is None:
                 break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch[:4]
-            if args.model_type == "BertForNextSentencePrediction" or args.model_type == "BertForQuestionAnswering" \
-                    or args.model_type == "BertForTokenClassification" or args.model_type == "BertForSequenceClassification":
-                #print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape, label_tensor.shape)
-                loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
-            else:
-                loss, logits = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
+            loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
             loss.backward()
             tr_loss += loss.item()
             optimizer.step()
@@ -133,10 +128,17 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         else:
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
         #print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
-        predictions = model(tokens_tensor, segments_tensor, mask_tensor)
+        try:
+            predictions = model(tokens_tensor, segments_tensor, mask_tensor)
+        except Exception as e:
+            print(tokens_tensor, segments_tensor, mask_tensor)
+            raise(e)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
-        predicted_score = list(predictions[:, 1].cpu().detach().numpy())
+        if args.data_format == "glue":
+            predicted_score = list(predictions[:, 0].cpu().detach().numpy())
+        else:
+            predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
         label_batch = list(label_tensor.cpu().detach().numpy())
         label_new = []
@@ -185,7 +187,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             else:
                 qids = qid_tensor.cpu().detach().numpy()
             assert len(qids) == len(predicted_index)
-            for qid, p, l, s, docid in zip(qids, predicted_index, label_batch):
+            for qid, p, l in zip(qids, predicted_index, label_batch):
                 f.write("{},{},{}\n".format(qid, p, l))
 
         label_new = label_new if len(label_new) > 0 else label_batch
@@ -204,6 +206,9 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         map, mrr, p30 = evaluate_trec(predictions_file=args.output_path2, \
             qrels_file=split + '.' + args.qrels_path)
         return [["map", "mrr", "p30"],[map, mrr, p30]]
+    elif args.data_format == "glue":
+        pearson_r, spearman_r = evaluate_glue(prediction_score_list, labels)
+        return [["pearson_r", "spearman_r"], [pearson_r, spearman_r]]
     elif args.data_format == "ontonote":
         acc, pre, rec, f1 = evaluate_ner(prediction_index_list, labels, test_dataset.label_map)
     else:

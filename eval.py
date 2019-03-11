@@ -2,11 +2,17 @@ import sys
 import numpy as np
 import subprocess
 import shlex
+from scipy.stats import pearsonr, spearmanr
 
 def evaluate_classification(prediction_index_list, labels):
     acc = get_acc(prediction_index_list, labels)
     pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
     return acc, pre, rec, f1
+
+def evaluate_glue(predictions, true_labels):
+    pearson_r = pearsonr(predictions, true_labels)[0]
+    spearman_r = spearmanr(predictions, true_labels)[0]
+    return pearson_r, spearman_r
 
 def evaluate_ner(prediction_index_list, labels, label_map):
     prediction_index_list, labels = recover_label(prediction_index_list, labels, label_map)

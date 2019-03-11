@@ -8,7 +8,7 @@ import torch
 
 from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, BertForNextSentencePrediction, BertForTokenClassification
 from pytorch_pretrained_bert.optimization import BertAdam
-
+from model import BertMSE
 
 def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", device="cuda", chinese=False, num_labels=2):
     # Load pre-trained model (weights)
@@ -23,6 +23,8 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
         model = BertForNextSentencePrediction.from_pretrained(base_model)
     elif model_type == "BertForTokenClassification":
         model = BertForTokenClassification.from_pretrained(base_model, num_labels=num_labels)
+    elif model_type == "BertMSE":
+        model = BertMSE()
     else:
         print("[Error]: unsupported model type")
         return None, None
@@ -87,13 +89,15 @@ class DataGenerator(object):
         elif data_format == "glue":
             self.f = open(os.path.join(data_path, "{}/{}.tsv".format(data_name, split)))
             first = True
-            f.readline()
+            self.f.readline()
             for l in self.f:
                 ls = l.replace("\n", "").split("\t")
-                assert len(ls) == 10
-                query = ls[-3]
-                doc = ls[-2]
-                label = ls[-1]
+                query = ls[7]
+                doc = ls[8]
+                if split == "test":
+                    label = 0
+                else:
+                    label = ls[9]
                 if first:
                     first = False
                     print("label: {}".format(label))
@@ -240,7 +244,10 @@ class DataGenerator(object):
             test_batch.append(torch.tensor(combine_index))
             token_type_ids_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
-            label_batch.append(int(label))
+            if self.data_format == "glue":
+                label_batch.append(float(label))
+            else:
+                label_batch.append(int(label))
             if len(test_batch) >= self.batch_size or self.epoch_end():
                 # Convert inputs to PyTorch tensors
                 tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(self.device)
