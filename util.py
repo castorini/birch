@@ -1,3 +1,5 @@
+import torch
+
 from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, BertForNextSentencePrediction, BertForTokenClassification
 from pytorch_pretrained_bert.optimization import BertAdam
 from model import BertMSE
@@ -41,7 +43,6 @@ def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs, da
                     t_total=num_train_steps)
     
     return optimizer
-
 
 
 def print_scores(scores, mode="test"):
