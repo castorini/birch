@@ -131,7 +131,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
-        if args.data_format == "glue" or args.data_format == "classification":
+        if args.data_format == "glue" or args.data_format == "regression":
             predicted_score = list(predictions[:, 0].cpu().detach().numpy())
         else:
             predicted_score = list(predictions[:, 1].cpu().detach().numpy())
@@ -202,7 +202,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         map, mrr, p30 = evaluate_trec(predictions_file=args.output_path2, \
             qrels_file=split + '.' + args.qrels_path)
         return [["map", "mrr", "p30"],[map, mrr, p30]]
-    elif args.data_format == "glue":
+    elif args.data_format == "glue" or args.data_format == "regression":
         pearson_r, spearman_r = evaluate_glue(prediction_score_list, labels)
         return [["pearson_r", "spearman_r"], [pearson_r, spearman_r]]
     elif args.data_format == "ontonote":
