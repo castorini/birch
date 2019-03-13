@@ -40,9 +40,8 @@ def clean_html(html):
     cleaned = re.sub(r"(?s)<.*?>", " ", cleaned)
     # Finally, we deal with whitespace
     cleaned = re.sub(r"&nbsp;", " ", cleaned)
+    cleaned = re.sub(r"  ", " ", cleaned)
     cleaned = re.sub(r"\t", " ", cleaned)
-    cleaned = re.sub(r"\n", " ", cleaned)
-    cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
 
 def chunk_sent(sent, max_len):
@@ -77,8 +76,21 @@ def get_qid2query(ftopic):
                 qid2query[qid] = query
     return qid2query
 
-def parse_doc_from_index(doc):
-    return doc
+def parse_doc_from_index(content):
+    ls = content.split("\n")
+    see_text = False
+    doc = ""
+    for l in ls:
+        l = l.replace("\n", "").strip()
+        if "<TEXT>" in l:
+            see_text = True
+        elif "</TEXT>" in l:
+            break
+        elif see_text:
+            if l == "<P>" or l == "</P>":
+                continue
+            doc += l + " "
+    return doc.strip()
 
 def search_document(topics, searcher, prediction_fn, qid2text, qid2desc,
    output_fn, qid2reldocids, qidx, didx, K=1000):
