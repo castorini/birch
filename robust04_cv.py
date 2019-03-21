@@ -92,9 +92,8 @@ def parse_doc_from_index(content):
             doc += l + " "
     return doc.strip()
 
-def search_document(topics, searcher, prediction_fn, qid2text, qid2desc,
+def search_document(topics, searcher, qid2text, qid2desc,
    output_fn, qid2reldocids, qidx, didx, K=1000):
-    # f = open(prediction_fn, "w")
     out = open(output_fn, "w")
     method = "rm3"
     for qid in topics:
@@ -109,7 +108,6 @@ def search_document(topics, searcher, prediction_fn, qid2text, qid2desc,
             # b = "".join(filter(lambda x: x in printable, b))
             clean_b = clean_html(b)
             sent_id = 0
-            # f.write("{} 0 {} 0 {} {}\n".format(qid, docno, sim, method))
             for sentence in tokenizer.tokenize(clean_b):
                 if len(sentence.strip().split()) > 512:
                     seq_list = chunk_sent(sentence, 512)
@@ -129,7 +127,6 @@ def search_document(topics, searcher, prediction_fn, qid2text, qid2desc,
                     sent_id += 1
                     didx += 1
         qidx += 1
-    # f.close()
     out.close()
     return qidx, didx
 
@@ -177,17 +174,24 @@ def cal_score(fn_qrels="../Anserini/src/main/resources/topics-and-qrels/qrels.ro
 
 if __name__ == '__main__':
     fqrel = "../src/main/resources/topics-and-qrels/qrels.robust2004.txt"
-    with open('robust04-paper2-folds.json') as f:
-        folds = json.load(f)
-    with open('robust04-paper2-folds-map-params.json') as f:
-        params = json.load(f)
+    cv_folder = 2
+    if cv_folder == 5:
+        with open('robust04-paper2-folds.json') as f:
+            folds = json.load(f)
+        with open('robust04-paper2-folds-map-params.json') as f:
+            params = json.load(f)
+    elif cv_folder == 2:
+        with open('robust04-paper1-folds.json') as f:
+            folds = json.load(f)
+        params = [  "0.9 0.5 50 17 0.20",
+                    "0.9 0.5 26 8 0.30"]
 
     qid2reldocids = get_qid2reldocids(fqrel)
     ftopic = "../src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
     qid2text = get_qid2query(ftopic)
     qid2desc = get_qid2desc('topics.desc')
-    prediction_fn = "predict_robust04_rm3_cv.txt"
-    output_fn = "robust04_bm25_rm3_cv.txt"
+    # prediction_fn = "predict_robust04_rm3_cv.txt"
+    output_fn = "robust04_bm25_rm3_cv_folder_1.txt"
     index_path="/tuna1/indexes/lucene-index.robust04.pos+docvectors+rawdocs"
     folder_idx = 1
     qidx, didx = 1, 1
@@ -196,9 +200,7 @@ if __name__ == '__main__':
         searcher = build_searcher(k1=a, b=b,
             fbTerms=c, fbDocs=d, originalQueryWeight=e,
             index_path=index_path, rm3=True)
-        # searcher = build_searcher()
         qidx, didx = search_document(topics, searcher, 
-            prediction_fn+str(folder_idx), 
             qid2text, qid2desc, output_fn+str(folder_idx), qid2reldocids,
             qidx, didx, 1000)
         folder_idx += 1

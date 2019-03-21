@@ -20,7 +20,7 @@ def build_searcher(k1=0.9, b=0.4,
         searcher.setRM3Reranker(fbTerms, fbDocs, originalQueryWeight, False)
     return searcher
 
-def answerini_retriever(query, searcher, para_num=20):
+def anserini_retriever(query, searcher, para_num=20):
     try:
         hits = searcher.search(JString(query), para_num)
     except ValueError as e:
@@ -41,6 +41,6 @@ def answerini_retriever(query, searcher, para_num=20):
 if __name__ == '__main__':
     searcher = build_searcher()
     query = "Radio Waves and Brain Cancer"
-    ret = answerini_retriever(query, searcher)
+    ret = anserini_retriever(query, searcher)
     print(query)
     print(ret)

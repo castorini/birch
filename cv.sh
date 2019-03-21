@@ -12,7 +12,7 @@ python eval_bert.py 2 0.59 0.1 1 test
 python eval_bert.py 2 0.67 0.1 2 test 
 python eval_bert.py 2 0.55 0.1 3 test 
 python eval_bert.py 2 0.59 0.1 4 test
-cat run.MB.cv.* > run.MB.cv
+cat run.MB.cv.test.* > run.MB.cv
 
 # python3 compare_runs.py --base run.robust04.rm3 --comparison run.QA.cv --qrels
 # qrels.robust2004.txt --metric map
