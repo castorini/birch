@@ -47,7 +47,7 @@ def eval_bm25(bm25F, topK = 1000):
     return top_doc_dict, doc_score_dict, sent_dict, q_dict, doc_label_dict
 
 def calc_q_doc_bert(bertF, runF, topics, top_doc_dict, sent_dict, q_dict, 
-        bm25_dict, label_dict, topKSent,alpha, beta):
+        bm25_dict, label_dict, topKSent, alpha, beta, gamma=0):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
@@ -75,7 +75,7 @@ def calc_q_doc_bert(bertF, runF, topics, top_doc_dict, sent_dict, q_dict,
             sum_score = 0
             score_list = []
             # rank = 1.0
-            weight_list = [1, beta]
+            weight_list = [1, beta, gamma]
 
             for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
                 score_list.append(s)
@@ -97,49 +97,46 @@ def main():
     topK = int(sys.argv[1])
     alpha = float(sys.argv[2])
     beta = float(sys.argv[3])
-    folder_set = int(sys.argv[4])
-    mode = sys.argv[5]
+    gamma = float(sys.argv[4])
+    test_folder_set = int(sys.argv[5])
+    mode = sys.argv[6]
 
     train_topics,test_topics, all_topics = [], [], []
-    with open('robust04-paper1-folds.json') as f:
+    with open('../robust04-paper2-folds.json') as f:
         folds = json.load(f)
     for i in range(0, len(folds)):
         all_topics.extend(folds[i])
-        if i != folder_set:
+        if i != test_folder_set:
             train_topics.extend(folds[i])
         else:
             test_topics.extend(folds[i])
 
-    assert(len(train_topics) == 125)
-    assert(len(test_topics) == 125)
+    assert(len(train_topics) == 200)
+    assert(len(test_topics) == 50)
     assert(len(all_topics) == 250)
 
     # robust04_rm3_5cv_sent_fields.txt is 5 folder cv sentences
+    # prediction 5 folder predict.MB predict.QA
 
-    rel_dict, nonrel_dict, all_dict = load_nist_qrels('qrels.robust2004.txt')
+    # robust04_rm3_2cv_sent_fields.txt is 2 folder cv sentences
+    # prediction 2 folder predict.MB.2folder
+    rel_dict, nonrel_dict, all_dict = load_nist_qrels('../qrels.robust2004.txt')
     top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-        eval_bm25('robust04_rm3_5cv_sent_fields.txt')
-    # top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-    #     eval_bm25('robust04_bm25_rm3_cv_folder_1_fields.txt')
-    # top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-    #     eval_bm25('robust04_bm25_rm3_cv_para2_sent_fields.txt')
-    
-    # rel_dict, nonrel_dict, all_dict = load_nist_qrels('qrels.core17.txt')
-    # top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-    #     eval_bm25('nyt_bm25_rm3_cv_fields.txt')
+        eval_bm25('../robust04_rm3_5cv_sent_fields.txt')
+
 
     if mode == 'train':
-        calc_q_doc_bert('predict.MB', 'run.MB.cv.train.'+str(folder_set),
+        calc_q_doc_bert('predict.MB', 'run.MB.cv.train',
             train_topics, top_doc_dict, sent_dict, q_dict,
-            doc_bm25_dict, doc_label_dict, topK, alpha, beta)
+            doc_bm25_dict, doc_label_dict, topK, alpha, beta, gamma)
     elif mode == 'test':
-        calc_q_doc_bert('predict.MB', 'run.MB.cv.test.'+str(folder_set),
+        calc_q_doc_bert('predict.MB', 'run.MB.cv.test.'+str(test_folder_set),
             test_topics, top_doc_dict, sent_dict, q_dict,
-            doc_bm25_dict, doc_label_dict, topK, alpha, beta)
+            doc_bm25_dict, doc_label_dict, topK, alpha, beta, gamma)
     else:
         calc_q_doc_bert('predict.MB', 'run.MB.cv.all', all_topics,
             top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
-            alpha, beta)
+            alpha, beta, gamma)
 
 
 if __name__ == "__main__":
