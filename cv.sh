@@ -25,3 +25,55 @@
 
 # python3 compare_runs.py --base run.robust04.rm3 --comparison run.MB.cv --qrels
 # qrels.robust2004.txt --metric map
+
+
+#MB 5 folders alpha
+# python3 eval_bert.py 3 0.6 0 0 0 test 
+# python3 eval_bert.py 3 0.6 0 0 1 test 
+# python3 eval_bert.py 3 0.7 0 0 2 test 
+# python3 eval_bert.py 3 0.5 0 0 3 test 
+# python3 eval_bert.py 3 0.6 0 0 4 test 
+# cat run.MB.cv.test.* > run.MB.cv.a
+
+#MB 5 folders alpha + beta
+# python3 eval_bert.py 3 0.6 0.1 0 0 test 
+# python3 eval_bert.py 3 0.6 0.1 0 1 test 
+# python3 eval_bert.py 3 0.6 0.1 0 2 test 
+# python3 eval_bert.py 3 0.5 0.0 0 3 test 
+# python3 eval_bert.py 3 0.6 0.2 0 4 test 
+# cat run.MB.cv.test.* > run.MB.cv.b
+
+#MB 5 folders alpha + beta + gamma
+# python3 eval_bert.py 3 0.6 0.1 0.0 0 test 
+# python3 eval_bert.py 3 0.6 0.1 0.1 1 test 
+# python3 eval_bert.py 3 0.6 0.1 0.1 2 test 
+# python3 eval_bert.py 3 0.5 0.0 0.0 3 test 
+# python3 eval_bert.py 3 0.6 0.1 0.1 4 test 
+# cat run.MB.cv.test.* > run.MB.cv.c
+
+
+
+#QA 5 folders alpha
+python3 eval_bert.py 3 0.8 0 0 0 test 
+python3 eval_bert.py 3 0.8 0 0 1 test 
+python3 eval_bert.py 3 0.8 0 0 2 test 
+python3 eval_bert.py 3 0.8 0 0 3 test 
+python3 eval_bert.py 3 0.8 0 0 4 test  
+cat run.QA.cv.test.* > run.QA.cv.a
+
+
+#QA 5 folders alpha
+python3 eval_bert.py 3 0.8 0 0 0 test 
+python3 eval_bert.py 3 0.8 0 0 1 test 
+python3 eval_bert.py 3 0.9 0.6 0 2 test 
+python3 eval_bert.py 3 0.8 0 0 3 test 
+python3 eval_bert.py 3 0.8 0 0 4 test  
+cat run.QA.cv.test.* > run.QA.cv.b
+
+#QA 5 folders alpha
+python3 eval_bert.py 3 0.8 0 0 0 test 
+python3 eval_bert.py 3 0.8 0 0 1 test 
+python3 eval_bert.py 3 0.9 0.5 0.1 2 test 
+python3 eval_bert.py 3 0.8 0 0 3 test 
+python3 eval_bert.py 3 0.8 0 0 4 test  
+cat run.QA.cv.test.* > run.QA.cv.c

@@ -3,6 +3,7 @@ import numpy as np
 import operator
 import sys
 import json
+import os
 
 def load_nist_qrels(qrelsF):
     rel_dict = defaultdict(list) 
@@ -46,8 +47,7 @@ def eval_bm25(bm25F, topK = 1000):
         assert(len(top_doc_dict[qid]) == topK)
     return top_doc_dict, doc_score_dict, sent_dict, q_dict, doc_label_dict
 
-def calc_q_doc_bert(bertF, runF, topics, top_doc_dict, sent_dict, q_dict, 
-        bm25_dict, label_dict, topKSent, alpha, beta, gamma=0):
+def load_bert_scores(bertF, q_dict, sent_dict):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
@@ -61,7 +61,12 @@ def calc_q_doc_bert(bertF, runF, topics, top_doc_dict, sent_dict, q_dict,
                 score_dict[q][doc] = [score]
             else:
                 score_dict[q][doc].append(score)
+    return score_dict
     
+
+def calc_q_doc_bert(score_dict, runF, test_set,
+        topics, top_doc_dict, sent_dict, q_dict,
+        bm25_dict, label_dict, topKSent, alpha, beta, gamma=0):
     run_file = open(runF, "w")
     for q in topics:
         doc_score_dict = {}
@@ -101,8 +106,9 @@ def main():
     test_folder_set = int(sys.argv[5])
     mode = sys.argv[6]
 
+    bert_ft = 'MB'
     train_topics,test_topics, all_topics = [], [], []
-    with open('../robust04-paper2-folds.json') as f:
+    with open('../robust04-paper1-folds.json') as f:
         folds = json.load(f)
     for i in range(0, len(folds)):
         all_topics.extend(folds[i])
@@ -111,8 +117,8 @@ def main():
         else:
             test_topics.extend(folds[i])
 
-    assert(len(train_topics) == 200)
-    assert(len(test_topics) == 50)
+    assert(len(train_topics) == 125)
+    assert(len(test_topics) == 125)
     assert(len(all_topics) == 250)
 
     # robust04_rm3_5cv_sent_fields.txt is 5 folder cv sentences
@@ -122,19 +128,38 @@ def main():
     # prediction 2 folder predict.MB.2folder
     rel_dict, nonrel_dict, all_dict = load_nist_qrels('../qrels.robust2004.txt')
     top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-        eval_bm25('../robust04_rm3_5cv_sent_fields.txt')
+        eval_bm25('../robust04_rm3_2cv_sent_fields.txt')
 
+    score_dict = load_bert_scores('predict.'+bert_ft+'.2folder', q_dict,
+       sent_dict)
 
     if mode == 'train':
-        calc_q_doc_bert('predict.MB', 'run.MB.cv.train',
-            train_topics, top_doc_dict, sent_dict, q_dict,
-            doc_bm25_dict, doc_label_dict, topK, alpha, beta, gamma)
+        # grid search best parameters
+        for alpha in np.arange(0, 1.05, 0.1):
+            for beta in np.arange(0, 1.05, 0.1):
+                for gamma in np.arange(0, 1.05, 0.1):
+                    calc_q_doc_bert(score_dict, 'run.'+bert_ft+'.cv.train',
+                        test_folder_set, train_topics, top_doc_dict, 
+                        sent_dict, q_dict, doc_bm25_dict, doc_label_dict, 
+                        topK, alpha, beta, gamma)
+                    qrels = '../qrels.robust2004.txt'
+                    base = 'run.'+bert_ft+'.cv.train'
+                    os.system(f'../trec_eval -M1000 -m map {qrels} {base}> eval.base')
+                    with open('eval.base', 'r') as f:
+                        for line in f:
+                            metric, qid, score = line.split('\t')
+                            map_score = float(score)
+                            print(test_folder_set,round(alpha,2), 
+                                round(beta,2), round(gamma,2), map_score)
     elif mode == 'test':
-        calc_q_doc_bert('predict.MB', 'run.MB.cv.test.'+str(test_folder_set),
+        calc_q_doc_bert(score_dict, 
+            'run.'+bert_ft+'.cv.test.'+str(test_folder_set),
+            test_folder_set,
             test_topics, top_doc_dict, sent_dict, q_dict,
             doc_bm25_dict, doc_label_dict, topK, alpha, beta, gamma)
     else:
-        calc_q_doc_bert('predict.MB', 'run.MB.cv.all', all_topics,
+        calc_q_doc_bert(score_dict, 'run.'+bert_ft+'.cv.all',
+            test_folder_set,  all_topics,
             top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
             alpha, beta, gamma)
 
