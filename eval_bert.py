@@ -66,7 +66,7 @@ def load_bert_scores(bertF, q_dict, sent_dict):
 
 def calc_q_doc_bert(score_dict, runF, test_set,
         topics, top_doc_dict, sent_dict, q_dict,
-        bm25_dict, label_dict, topKSent, alpha, beta, gamma=0):
+        bm25_dict, label_dict, topKSent, alpha, beta, gamma=0,delta=0):
     run_file = open(runF, "w")
     for q in topics:
         doc_score_dict = {}
@@ -80,7 +80,7 @@ def calc_q_doc_bert(score_dict, runF, test_set,
             sum_score = 0
             score_list = []
             # rank = 1.0
-            weight_list = [1, beta, gamma]
+            weight_list = [1, beta, gamma,delta]
 
             for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
                 score_list.append(s)
@@ -88,8 +88,6 @@ def calc_q_doc_bert(score_dict, runF, test_set,
                 # rank += 1
             # doc_dict[d] = w * bm25_dict[(q,d)]
             doc_score_dict[d] = alpha * bm25_dict[q][d]+ (1.0-alpha) * sum_score
-            # doc_score_dict[d] = np.mean(scores)
-            # doc_score_dict[d] = sum(scores[:4])
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
@@ -103,12 +101,15 @@ def main():
     alpha = float(sys.argv[2])
     beta = float(sys.argv[3])
     gamma = float(sys.argv[4])
-    test_folder_set = int(sys.argv[5])
-    mode = sys.argv[6]
+    delta = float(sys.argv[5])
+    test_folder_set = int(sys.argv[6])
+    mode = sys.argv[7]
 
     bert_ft = 'MB'
+    bm25_res = './robust04_rm3_5cv_sent_fields.txt'
+    para_folder = './robust04-paper2-folds.json'
     train_topics,test_topics, all_topics = [], [], []
-    with open('../robust04-paper1-folds.json') as f:
+    with open(para_folder) as f:
         folds = json.load(f)
     for i in range(0, len(folds)):
         all_topics.extend(folds[i])
@@ -117,8 +118,8 @@ def main():
         else:
             test_topics.extend(folds[i])
 
-    assert(len(train_topics) == 125)
-    assert(len(test_topics) == 125)
+    assert(len(train_topics) == 200)
+    assert(len(test_topics) == 50)
     assert(len(all_topics) == 250)
 
     # robust04_rm3_5cv_sent_fields.txt is 5 folder cv sentences
@@ -126,42 +127,46 @@ def main():
 
     # robust04_rm3_2cv_sent_fields.txt is 2 folder cv sentences
     # prediction 2 folder predict.MB.2folder
-    rel_dict, nonrel_dict, all_dict = load_nist_qrels('../qrels.robust2004.txt')
+    rel_dict, nonrel_dict, all_dict = load_nist_qrels('./qrels.robust2004.txt')
     top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-        eval_bm25('../robust04_rm3_2cv_sent_fields.txt')
+        eval_bm25(bm25_res)
 
-    score_dict = load_bert_scores('predict.'+bert_ft+'.2folder', q_dict,
+    score_dict = load_bert_scores('predict.'+bert_ft, q_dict,
        sent_dict)
 
     if mode == 'train':
         # grid search best parameters
-        for alpha in np.arange(0, 1.05, 0.1):
-            for beta in np.arange(0, 1.05, 0.1):
-                for gamma in np.arange(0, 1.05, 0.1):
-                    calc_q_doc_bert(score_dict, 'run.'+bert_ft+'.cv.train',
-                        test_folder_set, train_topics, top_doc_dict, 
-                        sent_dict, q_dict, doc_bm25_dict, doc_label_dict, 
-                        topK, alpha, beta, gamma)
-                    qrels = '../qrels.robust2004.txt'
-                    base = 'run.'+bert_ft+'.cv.train'
-                    os.system(f'../trec_eval -M1000 -m map {qrels} {base}> eval.base')
-                    with open('eval.base', 'r') as f:
-                        for line in f:
-                            metric, qid, score = line.split('\t')
-                            map_score = float(score)
-                            print(test_folder_set,round(alpha,2), 
-                                round(beta,2), round(gamma,2), map_score)
+        for alpha in np.arange(0.7, 0.85, 0.1):
+            for beta in np.arange(0, 0.25, 0.1):
+                for gamma in np.arange(0, 0.25, 0.1):
+                    for delta in np.arange(0, 0.25, 0.1):
+                        calc_q_doc_bert(score_dict, 'run.'+bert_ft+'.cv.train',
+                            test_folder_set, train_topics, top_doc_dict, 
+                            sent_dict, q_dict, doc_bm25_dict, doc_label_dict, 
+                            topK, alpha, beta, gamma, delta)
+                        qrels = './qrels.robust2004.txt'
+                        base = 'run.'+bert_ft+'.cv.train'
+                        os.system(f'./trec_eval -M1000 -m map {qrels} {base}> eval.base')
+                        with open('eval.base', 'r') as f:
+                            for line in f:
+                                metric, qid, score = line.split('\t')
+                                map_score = float(score)
+                                print(test_folder_set,round(alpha,2), 
+                                    round(beta,2), round(gamma,2), 
+                                    round(delta,2), map_score)
     elif mode == 'test':
         calc_q_doc_bert(score_dict, 
             'run.'+bert_ft+'.cv.test.'+str(test_folder_set),
             test_folder_set,
             test_topics, top_doc_dict, sent_dict, q_dict,
-            doc_bm25_dict, doc_label_dict, topK, alpha, beta, gamma)
+            doc_bm25_dict, doc_label_dict, topK, 
+            alpha, beta, gamma, delta)
     else:
         calc_q_doc_bert(score_dict, 'run.'+bert_ft+'.cv.all',
             test_folder_set,  all_topics,
-            top_doc_dict, sent_dict,q_dict,doc_bm25_dict, doc_label_dict, topK,
-            alpha, beta, gamma)
+            top_doc_dict, sent_dict, q_dict,
+            doc_bm25_dict, doc_label_dict, topK,
+            alpha, beta, gamma, delta)
 
 
 if __name__ == "__main__":
