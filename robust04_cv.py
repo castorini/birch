@@ -174,12 +174,18 @@ def cal_score(fn_qrels="../Anserini/src/main/resources/topics-and-qrels/qrels.ro
 
 if __name__ == '__main__':
     fqrel = "../src/main/resources/topics-and-qrels/qrels.robust2004.txt"
+    ftopic = "../src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
+    output_fn = "robust04_bm25_rm3_cv.txt"
+    index_path="/tuna1/indexes/lucene-index.robust04.pos+docvectors+rawdocs"
     cv_folder = 2
     if cv_folder == 5:
         with open('robust04-paper2-folds.json') as f:
             folds = json.load(f)
-        with open('robust04-paper2-folds-map-params.json') as f:
-            params = json.load(f)
+        params = [ "0.9 0.5 47 9 0.30",
+                   "0.9 0.5 47 9 0.30",
+                   "0.9 0.5 47 9 0.30",
+                   "0.9 0.5 47 9 0.30",
+                   "0.9 0.5 26 8 0.30" ]
     elif cv_folder == 2:
         with open('robust04-paper1-folds.json') as f:
             folds = json.load(f)
@@ -187,12 +193,10 @@ if __name__ == '__main__':
                     "0.9 0.5 26 8 0.30"]
 
     qid2reldocids = get_qid2reldocids(fqrel)
-    ftopic = "../src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
     qid2text = get_qid2query(ftopic)
     qid2desc = get_qid2desc('topics.desc')
     # prediction_fn = "predict_robust04_rm3_cv.txt"
-    output_fn = "robust04_bm25_rm3_cv_folder_1.txt"
-    index_path="/tuna1/indexes/lucene-index.robust04.pos+docvectors+rawdocs"
+    
     folder_idx = 1
     qidx, didx = 1, 1
     for topics, p in zip(folds, params):
