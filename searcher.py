@@ -2,9 +2,15 @@ import os
 import numpy as np
 
 import jnius_config
-jnius_config.set_classpath("../target/anserini-0.3.1-SNAPSHOT-fatjar.jar")
+# TODO: make path dynamic
+jnius_config.set_classpath("../Anserini/target/anserini-0.4.1-SNAPSHOT-fatjar.jar")
 
-from jnius import autoclass
+try:
+    from jnius import autoclass
+except KeyError:
+    os.environ['JAVA_HOME'] = '/usr/lib/jvm/java-8-oracle'
+    from jnius import autoclass
+
 JString = autoclass('java.lang.String')
 JSearcher = autoclass('io.anserini.search.SimpleSearcher')
 
