@@ -9,6 +9,9 @@ import subprocess
 import sys
 import re
 
+from args import get_args
+from robust04_utils import *
+
 from searcher import *
 import searcher
 
@@ -51,33 +54,13 @@ def chunk_sent(sent, max_len):
         chunked_sents.append(" ".join(seq))
     return chunked_sents
 
-def get_qid2query(ftopic):
-    qid2query = {}
-    f = open(ftopic)
-    query_tag = "title"
-    empty = False
-    for l in f:
-        if empty == True:
-            qid2query[qid] = l.replace("\n", "").strip()
-            empty = False
-        ind = l.find("Number: ")
-        if ind >= 0:
-            qid = l[ind+8:-1]
-            qid = str(int(qid))
-        ind = l.find("<{}>".format(query_tag))
-        if ind >= 0:
-            query = l[ind+8:-1].strip()
-            if len(query) == 0:
-                empty = True
-            else:
-                qid2query[qid] = query
-    return qid2query
 
 def parse_doc_from_index(doc):
     return doc
 
-def search_document(searcher, prediction_fn, qid2text, qid2desc, output_fn,
-   qid2reldocids, K=100):
+
+def search_document(searcher, prediction_fn, qid2text,
+                    qid2desc, output_fn, qid2reldocids, K=100):
     # f = open(prediction_fn, "w")
     out = open(output_fn, "w")
     method = "rm3"
@@ -116,26 +99,6 @@ def search_document(searcher, prediction_fn, qid2text, qid2desc, output_fn,
     # f.close()
     out.close()
 
-def get_qid2reldocids(fqrel):
-    f = open(fqrel)
-    qid2reldocids = {}
-    for l in f:
-        qid, _, docid, score = l.replace("\n", "").strip().split()
-        if score != "0":
-            if qid not in qid2reldocids:
-                qid2reldocids[qid] = set()
-            qid2reldocids[qid].add(docid)
-    return qid2reldocids
-
-def get_qid2desc(fdesc):
-    f = open(fdesc)
-    qid2desc = {}
-    for l in f:
-        qid, desc = l.strip().split('\t')
-        qid2desc[qid]= desc
-    return qid2desc
-
-
 def cal_score(fn_qrels="../Anserini/src/main/resources/topics-and-qrels/qrels.robust2004.txt", prediction="score.txt"):
     cmd = "/bin/sh run_eval_new.sh {} {}".format(prediction, fn_qrels)
     pargs = shlex.split(cmd)
@@ -159,16 +122,21 @@ def cal_score(fn_qrels="../Anserini/src/main/resources/topics-and-qrels/qrels.ro
     return Map, Mrr, P30, P20, NDCG20
 
 if __name__ == '__main__':
-    fqrel = "../src/main/resources/topics-and-qrels/qrels.robust2004.txt"
-    qid2reldocids = get_qid2reldocids(fqrel)
-    ftopic = "../src/main/resources/topics-and-qrels/topics.robust04.301-450.601-700.txt"
-    qid2text = get_qid2query(ftopic)
-    qid2desc = get_qid2desc('topics.desc')
-    prediction_fn = "predict_robust04_bm25.txt"
-    output_fn = "robust04_bm25_desc.txt"
-    index_path="/tuna1/indexes/lucene-index.robust04.pos+docvectors+rawdocs"
-    searcher = build_searcher(index_path=index_path,rm3=True)
-    # searcher = build_searcher()
-    search_document(searcher, prediction_fn, qid2text, qid2desc, output_fn,
-       qid2reldocids)
+    args = get_args()
+    target_path = args.anserini_path
+    data_path = args.data_path
+    index_path = args.index_path
+
+    fqrel = os.path.join(data_path, 'topics-and-qrels', 'qrels.robust2004.txt')
+    ftopic = os.path.join(data_path, 'topics-and-qrels', 'topics.robust04.301-450.601-700.txt')
+    prediction_fn = 'predict_robust04_bm25.txt'
+    output_fn = 'robust04_bm25_desc.txt'
+
+    qid2docid = get_relevant_docids(fqrel)
+    qid2text = get_query(ftopic)
+    qid2desc = get_desc('topics.desc')
+
+    searcher = build_searcher(index_path=index_path, rm3=True)
+    search_document(searcher, prediction_fn, qid2text,
+                    qid2desc, output_fn, qid2docid)
     # cal_score(prediction=prediction_fn)

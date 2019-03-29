@@ -14,8 +14,9 @@ except KeyError:
 JString = autoclass('java.lang.String')
 JSearcher = autoclass('io.anserini.search.SimpleSearcher')
 
+# TODO: rename args
 def build_searcher(k1=0.9, b=0.4,
-    fbTerms=10, fbDocs=10, originalQueryWeight=0.5, 
+    fb_terms=10, fb_docs=10, original_query_weight=0.5,
     index_path="index/lucene-index.robust04.pos+docvectors+rawdocs", 
     rm3=False, chinese=False):
     searcher = JSearcher(JString(index_path))
@@ -23,7 +24,7 @@ def build_searcher(k1=0.9, b=0.4,
     if not rm3:
         searcher.setDefaultReranker()
     else:
-        searcher.setRM3Reranker(fbTerms, fbDocs, originalQueryWeight, False)
+        searcher.setRM3Reranker(fb_terms, fb_docs, original_query_weight, False)
     return searcher
 
 def anserini_retriever(query, searcher, para_num=20):

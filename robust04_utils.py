@@ -41,5 +41,5 @@ def get_desc(fdesc):
     with open(fdesc) as f:
         for line in f:
             qid, desc = line.strip().split('\t')
-            qid2desc = desc
+            qid2desc[qid] = desc
     return qid2desc
