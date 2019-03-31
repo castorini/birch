@@ -164,6 +164,10 @@ if __name__ == '__main__':
         params = [  "0.9 0.5 50 17 0.20",
                     "0.9 0.5 26 8 0.30"]
 
+    qid2reldocids = get_qid2reldocids(fqrel)
+    qid2text = get_qid2query(ftopic)
+    qid2desc = get_qid2desc('topics.desc')
+
     folder_idx = 1
     query_idx, doc_idx = 1, 1  # TODO: ?
     for topics, param in zip(folds, params):
