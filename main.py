@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import random
 import numpy as np
 import argparse
@@ -18,16 +20,18 @@ if torch.cuda.is_available():
 
 def train(args):
     if args.load_trained:
-        epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
+        epoch, arch, model, tokenizer, scores, _ = load_checkpoint(args.pytorch_dump_path)
     else:
+        print('new model')
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device, chinese=args.chinese,
                                                            num_labels=args.num_labels)
+
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device,
-                                  args.data_format)
+                                  args.data_format, add_url=True)
     validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device,
-                                     args.data_format, label_map=train_dataset.label_map)
+                                     args.data_format, label_map=train_dataset.label_map, add_url=True)
     test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device,
-                                 args.data_format, label_map=train_dataset.label_map)
+                                 args.data_format, label_map=train_dataset.label_map, add_url=True)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs,
                                train_dataset.data_size, args.batch_size)
 
@@ -35,15 +39,21 @@ def train(args):
     global_step = 0
     best_score = 0
     step = 0
+    print('training')
     for epoch in range(1, args.num_train_epochs + 1):
         print("epoch {} ............".format(epoch))
         tr_loss = 0
         # random.shuffle(train_dataset)
+        # counter = 0
         while True:
+            # TODO: memory profiling
+            # print(counter)
+            # counter += 1
             batch = train_dataset.load_batch()
             if batch is None:
                 break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch[:4]
+            del batch
             loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
             loss.backward()
             tr_loss += loss.item()
@@ -55,8 +65,14 @@ def train(args):
                 print("step: {}".format(step))
                 best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path,
                                          best_score, epoch, args.model_type)
+                torch.cuda.empty_cache()
 
             step += 1
+            del tokens_tensor
+            del segments_tensor
+            del mask_tensor
+            del label_tensor
+            torch.cuda.empty_cache()
 
         print("[train] loss: {}".format(tr_loss))
         best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score,
@@ -67,6 +83,7 @@ def train(args):
 
 
 def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch):
+    print('eval select')
     scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
     print_scores(scores_dev, mode="dev")
     scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
@@ -83,107 +100,120 @@ def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, be
 
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
-        epoch, arch, model, tokenizer, scores, label_map = load_checkpoint(args.pytorch_dump_path)
+        epoch, arch, model, tokenizer, scores, label_map = load_checkpoint(
+            args.pytorch_dump_path)
         assert test_dataset is None
         print("Load {} set".format(split))
         test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device,
                                      args.data_format, label_map=label_map)
 
-    model.eval()
-    prediction_score_list, prediction_index_list, labels = [], [], []
-    f = open(args.output_path, "w")
-    f2 = open(args.output_path2, "w")
-    qrelf = open(split + '.' + args.qrels_path, "w")
+    with torch.no_grad():
+        model.eval()
+        prediction_score_list, prediction_index_list, labels = [], [], []
+        f = open(args.output_path, "w")
+        f2 = open(args.output_path2, "w")
+        qrelf = open(split + '.' + args.qrels_path, "w")
 
-    lineno = 1
-    label_map_reverse = {}
-    for k in test_dataset.label_map:
-        label_map_reverse[test_dataset.label_map[k]] = k
-    qid_tensor, docid_tensor = None, None
-    while True:
-        batch = test_dataset.load_batch()
-        if batch is None:
-            break
-        if len(batch) == 6:
-            tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
-        elif len(batch) == 5:
-            tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor = batch
-        else:
-            tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
-        # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
-        predictions = model(tokens_tensor, segments_tensor, mask_tensor)
-        scores = predictions.cpu().detach().numpy()
-        predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
-        if args.data_format == "glue" or args.data_format == "regression":
-            predicted_score = list(predictions[:, 0].cpu().detach().numpy())
-        else:
-            predicted_score = list(predictions[:, 1].cpu().detach().numpy())
-        prediction_score_list.extend(predicted_score)
-        label_batch = list(label_tensor.cpu().detach().numpy())
-        label_new = []
-        predicted_index_new = []
-        if args.data_format == "trec":
-            qids = qid_tensor.cpu().detach().numpy()
-            if docid_tensor is not None:
-                docids = docid_tensor.cpu().detach().numpy()
+        lineno = 1
+        label_map_reverse = {}
+        for k in test_dataset.label_map:
+            label_map_reverse[test_dataset.label_map[k]] = k
+        qid_tensor, docid_tensor = None, None
+        import time
+        start = time.time()
+        # counter = 0
+        while True:
+            # print(counter, flush=True)
+            # counter += 1
+            # if counter > 100: break
+            batch = test_dataset.load_batch()
+            if batch is None:
+                break
+            if len(batch) == 6:
+                tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
+            elif len(batch) == 5:
+                tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor = batch
             else:
-                docids = list(range(lineno, lineno + len(label_batch)))
-            for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
-                                               scores, label_batch):
-                f.write("{}\t{}\n".format(lineno, p))
-                f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
-                qrelf.write("{} Q0 {} {}\n".format(qid, docid, label))
-                lineno += 1
-        elif args.data_format == "ontonote":
-            tokens = tokens_tensor.cpu().detach().numpy()
-            for token, p, label in zip(tokens, predicted_index, label_batch):
-                assert len(token) == len(p)
-                assert len(token) == len(label)
-                predicted_index_tmp = []
-                label_tmp = []
-                for a, b, c in zip(token, p, label):
-                    a = tokenizer.convert_ids_to_tokens([a])[0]
-                    if a == "[SEP]":
-                        f.write("\n")
-                        break
-                    predicted_index_tmp.append(b)
-                    label_tmp.append(c)
-                    b = label_map_reverse[b]
-                    c = label_map_reverse[c]
-                    f.write("{} {} {}\n".format(a, b, c))
-                predicted_index_new.append(predicted_index_tmp)
-                label_new.append(label_tmp)
-        elif args.data_format == "robust04":
-            qids = qid_tensor.cpu().detach().numpy()
-            docids = docid_tensor.cpu().detach().numpy()
-            assert len(qids) == len(predicted_index)
-            for p, l, s, qid, docid in zip(predicted_index, label_batch, scores, qids, docids):
-                f.write("{} Q0 {} {} {} bert {}\n".format(qid, docid, lineno, s[1], l))
-                lineno += 1
-        else:
-            if qid_tensor is None:
-                qids = list(range(lineno, lineno + len(label_batch)))
+                tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
+            del batch
+            # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
+            predictions = model(tokens_tensor, segments_tensor, mask_tensor)
+            scores = predictions.cpu().detach().numpy()
+            predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
+            if args.data_format == "glue" or args.data_format == "regression":
+                predicted_score = list(predictions[:, 0].cpu().detach().numpy())
             else:
+                predicted_score = list(predictions[:, 1].cpu().detach().numpy())
+            prediction_score_list.extend(predicted_score)
+            label_batch = list(label_tensor.cpu().detach().numpy())
+            label_new = []
+            predicted_index_new = []
+            if args.data_format == "trec":
                 qids = qid_tensor.cpu().detach().numpy()
-            assert len(qids) == len(predicted_index)
-            for qid, p, l in zip(qids, predicted_index, label_batch):
-                f.write("{},{},{}\n".format(qid, p, l))
+                if docid_tensor is not None:
+                    docids = docid_tensor.cpu().detach().numpy()
+                else:
+                    docids = list(range(lineno, lineno + len(label_batch)))
+                for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
+                                                   scores, label_batch):
+                    f.write("{}\t{}\n".format(lineno, p))
+                    f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
+                    qrelf.write("{} Q0 {} {}\n".format(qid, docid, label))
+                    lineno += 1
+            elif args.data_format == "ontonote":
+                tokens = tokens_tensor.cpu().detach().numpy()
+                for token, p, label in zip(tokens, predicted_index, label_batch):
+                    assert len(token) == len(p)
+                    assert len(token) == len(label)
+                    predicted_index_tmp = []
+                    label_tmp = []
+                    for a, b, c in zip(token, p, label):
+                        a = tokenizer.convert_ids_to_tokens([a])[0]
+                        if a == "[SEP]":
+                            f.write("\n")
+                            break
+                        predicted_index_tmp.append(b)
+                        label_tmp.append(c)
+                        b = label_map_reverse[b]
+                        c = label_map_reverse[c]
+                        f.write("{} {} {}\n".format(a, b, c))
+                    predicted_index_new.append(predicted_index_tmp)
+                    label_new.append(label_tmp)
+            elif args.data_format == "robust04":
+                qids = qid_tensor.cpu().detach().numpy()
+                docids = docid_tensor.cpu().detach().numpy()
+                assert len(qids) == len(predicted_index)
+                for p, l, s, qid, docid in zip(predicted_index, label_batch, scores, qids, docids):
+                    f.write("{} Q0 {} {} {} bert {}\n".format(qid, docid, lineno, s[1], l))
+                    lineno += 1
+            else:
+                if qid_tensor is None:
+                    qids = list(range(lineno, lineno + len(label_batch)))
+                else:
+                    qids = qid_tensor.cpu().detach().numpy()
+                assert len(qids) == len(predicted_index)
+                for qid, p, l in zip(qids, predicted_index, label_batch):
+                    f.write("{},{},{}\n".format(qid, p, l))
 
-        label_new = label_new if len(label_new) > 0 else label_batch
-        predicted_index_new = predicted_index_new if len(predicted_index_new) > 0 else predicted_index
-        labels.extend(label_new)
-        prediction_index_list += predicted_index_new
-        del predictions
+            label_new = label_new if len(label_new) > 0 else label_batch
+            predicted_index_new = predicted_index_new if len(predicted_index_new) > 0 else predicted_index
+            labels.extend(label_new)
+            prediction_index_list += predicted_index_new
+            del predictions
+
+            # torch.cuda.empty_cache()
 
     f.close()
     f2.close()
     qrelf.close()
+
     torch.cuda.empty_cache()
+
     model.train()
 
     if args.data_format == "trec":
         map, mrr, p30 = evaluate_trec(predictions_file=args.output_path2, \
-                                      qrels_file=split + '.' + args.qrels_path)
+                                          qrels_file=split + '.' + args.qrels_path)
         return [["map", "mrr", "p30"], [map, mrr, p30]]
     elif args.data_format == "glue" or args.data_format == "regression":
         pearson_r, spearman_r = evaluate_glue(prediction_score_list, labels)
@@ -205,7 +235,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_train_epochs', default=3, type=int, help='')
     parser.add_argument('--data_path', default='/data/wyang/ShortTextSemanticSimilarity/data/corpora/', help='')
     parser.add_argument('--data_name', default='annotation', help='annotation or youzan_new or tweet')
-    parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
+    parser.add_argument('--pytorch_dump_path', default='models/saved.model_tweet2014_3_best', help='')
     parser.add_argument('--load_trained', action='store_true', default=False, help='')
     parser.add_argument('--chinese', action='store_true', default=False, help='')
     parser.add_argument('--eval_steps', default=-1, type=int,

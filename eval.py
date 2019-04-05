@@ -25,7 +25,7 @@ def evaluate_ner(prediction_index_list, labels, label_map):
 
 
 def evaluate_trec(predictions_file, qrels_file):
-    cmd = "eval/trec_eval.9.0.4/trec_eval {judgement} {output} -m map -m recip_rank -m P.30".format(
+    cmd = "../Anserini/eval/trec_eval.9.0.4/trec_eval {judgement} {output} -m map -m recip_rank -m P.30".format(
         judgement=qrels_file, output=predictions_file)
     pargs = shlex.split(cmd)
     print("running {}".format(cmd))

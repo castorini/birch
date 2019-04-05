@@ -3,6 +3,8 @@ import numpy as np
 
 import torch
 
+MAX_QUERY_LEN = 10
+MAX_SENT_LEN = 2115
 
 class DataGenerator(object):
     def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", data_format="trec",
@@ -11,6 +13,8 @@ class DataGenerator(object):
         self.data = []
         self.data_format = data_format
         self.label_map = {} if label_map is None else label_map
+        self.max_a_len = 0
+        self.max_b_len = 0
         if data_format == "trec":
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
@@ -21,10 +25,14 @@ class DataGenerator(object):
                 for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
                     self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
                                       ID.replace("\n", ""), url.replace("\n", "")])
+                    self.max_a_len = max(self.max_a_len, len(a.split(' ')))
+                    self.max_b_len = max(self.max_b_len, len(b.split(' ')))
             else:
                 for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
                     self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
                                       ID.replace("\n", "")])
+                    self.max_a_len = max(self.max_a_len, len(a.split(' ')))
+                    self.max_b_len = max(self.max_b_len, len(b.split(' ')))
 
         elif data_format == "ontonote":
             self.f = open(os.path.join(data_path, "{}/{}.char.bmes".format(data_name, split)))
@@ -91,7 +99,8 @@ class DataGenerator(object):
                     print("doc: {}".format(doc))
                 self.data.append([label, query, doc])
         else:
-            self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
+            self.f = open(os.path.join(data_path, data_name))
+            # self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             first = True
             for l in self.f:
                 ls = l.replace("\n", "").split("\t")
@@ -110,6 +119,10 @@ class DataGenerator(object):
                     print("qid: {}".format(qid))
                     print("docid: {}".format(docid))
                 self.data.append([label, query, doc, qid, docid])
+                self.max_a_len = max(self.max_a_len, len(query.split(' ')))
+                self.max_b_len = max(self.max_b_len, len(doc.split(' ')))
+
+        print('a: {} b: {}'.format(self.max_a_len, self.max_b_len))
 
         np.random.shuffle(self.data)
         self.data_i = 0
@@ -133,17 +146,37 @@ class DataGenerator(object):
         tokenized_text.insert(0, "[CLS]")
         tokenized_text.append("[SEP]")
         # Convert token to vocabulary indices
+        tokenized_text = tokenized_text[:512]
         indexed_tokens = self.tokenizer.convert_tokens_to_ids(tokenized_text)
         return indexed_tokens
 
     def tokenize_two(self, a, b):
         b_index = self.tokenize_index(b)
-        tokenized_text_a = ["[CLS]"] + self.tokenizer.tokenize(a) + ["[SEP]"]
+        tokenized_text_a = self.tokenizer.tokenize(a)
+
+        # Pad query?
+        # TODO: add cli argument for padding options
+        query_padding = ['[PAD]'] * (MAX_QUERY_LEN - len(tokenized_text_a))
+        # left pad
+        # tokenized_text_a = query_padding + tokenized_text_a
+        # right pad
+        tokenized_text_a = tokenized_text_a + query_padding
+
+        tokenized_text_a = ["[CLS]"] + tokenized_text_a + ["[SEP]"]
+        # print('len: {}\n{}'.format(len(tokenized_text_a), tokenized_text_a))
+
+        doc_padding = ['[PAD]'] * (512 - (len(tokenized_text_a) + 1))  # account for [SEP]
         tokenized_text_b = self.tokenizer.tokenize(b)
-        tokenized_text_b = tokenized_text_b[:510 - len(tokenized_text_a)]
+        # Pad sequence
+        # right pad
+        tokenized_text_b = tokenized_text_b + doc_padding
+        # TODO: does left pad make sense?
+        tokenized_text_b = tokenized_text_b[:511 - len(tokenized_text_a)]
         tokenized_text_b.append("[SEP]")
+        # print('len: {}\n{}'.format(len(tokenized_text_b), tokenized_text_b))
         segments_ids = [0] * len(tokenized_text_a) + [1] * len(tokenized_text_b)
         tokenized_text = tokenized_text_a + tokenized_text_b
+        # print('len: {}'.format(len(tokenized_text)))
         # Convert token to vocabulary indices
         indexed_tokens = self.tokenizer.convert_tokens_to_ids(tokenized_text)
         return indexed_tokens, segments_ids
@@ -207,6 +240,7 @@ class DataGenerator(object):
             else:  # sentence pair classification
                 if self.data_format == "robust04":
                     label, a, b, qid, docid = instance
+                    # print('a: {} | b: {}'.format(a, b), flush=True)
                     qid = int(qid)
                     docid = int(docid)
                     qid_batch.append(qid)
