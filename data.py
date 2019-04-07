@@ -8,13 +8,14 @@ MAX_SENT_LEN = 2115
 
 class DataGenerator(object):
     def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", data_format="trec",
-                 add_url=False, label_map=None):
+                 add_url=False, label_map=None, padding=False):
         super(DataGenerator, self).__init__()
         self.data = []
         self.data_format = data_format
         self.label_map = {} if label_map is None else label_map
         self.max_a_len = 0
         self.max_b_len = 0
+        self.padding = padding
         if data_format == "trec":
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
@@ -122,7 +123,7 @@ class DataGenerator(object):
                 self.max_a_len = max(self.max_a_len, len(query.split(' ')))
                 self.max_b_len = max(self.max_b_len, len(doc.split(' ')))
 
-        print('a: {} b: {}'.format(self.max_a_len, self.max_b_len))
+        # print('a: {} b: {}'.format(self.max_a_len, self.max_b_len))
 
         np.random.shuffle(self.data)
         self.data_i = 0
@@ -154,23 +155,26 @@ class DataGenerator(object):
         b_index = self.tokenize_index(b)
         tokenized_text_a = self.tokenizer.tokenize(a)
 
-        # Pad query?
-        # TODO: add cli argument for padding options
-        query_padding = ['[PAD]'] * (MAX_QUERY_LEN - len(tokenized_text_a))
-        # left pad
-        # tokenized_text_a = query_padding + tokenized_text_a
-        # right pad
-        tokenized_text_a = tokenized_text_a + query_padding
+        if self.padding:
+            # Pad query
+            query_padding = ['[PAD]'] * (MAX_QUERY_LEN - len(tokenized_text_a))
+            # left pad
+            # tokenized_text_a = query_padding + tokenized_text_a
+            # right pad
+            tokenized_text_a = tokenized_text_a + query_padding
 
         tokenized_text_a = ["[CLS]"] + tokenized_text_a + ["[SEP]"]
         # print('len: {}\n{}'.format(len(tokenized_text_a), tokenized_text_a))
 
-        doc_padding = ['[PAD]'] * (512 - (len(tokenized_text_a) + 1))  # account for [SEP]
+
         tokenized_text_b = self.tokenizer.tokenize(b)
-        # Pad sequence
-        # right pad
-        tokenized_text_b = tokenized_text_b + doc_padding
-        # TODO: does left pad make sense?
+
+        if self.padding:
+            # Pad sequence
+            doc_padding = ['[PAD]'] * (511 - len(tokenized_text_a))  # account for [SEP]
+            # right pad
+            tokenized_text_b = tokenized_text_b + doc_padding
+
         tokenized_text_b = tokenized_text_b[:511 - len(tokenized_text_a)]
         tokenized_text_b.append("[SEP]")
         # print('len: {}\n{}'.format(len(tokenized_text_b), tokenized_text_b))

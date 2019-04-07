@@ -53,9 +53,10 @@ def print_scores(scores, mode="test"):
     print("")
 
 
-def save_checkpoint(epoch, arch, model, tokenizer, scores, filename, label_map):
+def save_checkpoint(epoch, arch, model, tokenizer, scores, filename, label_map, step):
     state = {
         'epoch': epoch,
+        'step': step,
         'arch': arch,
         'model': model,
         'tokenizer': tokenizer,
@@ -68,5 +69,5 @@ def save_checkpoint(epoch, arch, model, tokenizer, scores, filename, label_map):
 def load_checkpoint(filename):
     print("Load PyTorch model from {}".format(filename))
     state = torch.load(filename)
-    return state['epoch'], state['arch'], state['model'], state['tokenizer'], state['scores'], state['label_map']
+    return state['epoch'], state['arch'], state['model'], state['tokenizer'], state['scores'], state['label_map'], state['step']
 

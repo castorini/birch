@@ -22,31 +22,29 @@ def train(args):
     if args.load_trained:
         epoch, arch, model, tokenizer, scores, _ = load_checkpoint(args.pytorch_dump_path)
     else:
-        print('new model')
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device, chinese=args.chinese,
                                                            num_labels=args.num_labels)
 
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device,
-                                  args.data_format, add_url=True)
+                                  args.data_format, add_url=True, padding=args.padding)
     validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device,
-                                     args.data_format, label_map=train_dataset.label_map, add_url=True)
+                                     args.data_format, label_map=train_dataset.label_map, add_url=True, padding=args.padding)
     test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device,
-                                 args.data_format, label_map=train_dataset.label_map, add_url=True)
+                                 args.data_format, label_map=train_dataset.label_map, add_url=True, padding=args.padding)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs,
                                train_dataset.data_size, args.batch_size)
 
     model.train()
     global_step = 0
     best_score = 0
-    step = 0
     print('training')
     for epoch in range(1, args.num_train_epochs + 1):
+        step = 0
         print("epoch {} ............".format(epoch))
         tr_loss = 0
         # random.shuffle(train_dataset)
         # counter = 0
         while True:
-            # TODO: memory profiling
             # print(counter)
             # counter += 1
             batch = train_dataset.load_batch()
@@ -64,7 +62,7 @@ def train(args):
             if args.eval_steps > 0 and step % args.eval_steps == 0:
                 print("step: {}".format(step))
                 best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path,
-                                         best_score, epoch, args.model_type)
+                                         best_score, epoch, args.model_type, step)
                 torch.cuda.empty_cache()
 
             step += 1
@@ -82,7 +80,7 @@ def train(args):
     print_scores(scores)
 
 
-def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch):
+def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch, step):
     print('eval select')
     scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
     print_scores(scores_dev, mode="dev")
@@ -94,7 +92,7 @@ def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, be
         # Save pytorch-model
         model_path = "{}_{}".format(model_path, epoch)
         print("Save PyTorch model to {}".format(model_path))
-        save_checkpoint(epoch, arch, model, tokenizer, scores_dev, model_path, test_dataset.label_map)
+        save_checkpoint(epoch, arch, model, tokenizer, scores_dev, model_path, test_dataset.label_map, step)
 
     return best_score
 
@@ -229,6 +227,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', default='train', help='[train, test]')
     parser.add_argument('--device', default='cuda', help='[cuda, cpu]')
+    parser.add_argument('--padding', default=False)
     parser.add_argument('--batch_size', default=16, type=int, help='[1, 8, 16, 32]')
     parser.add_argument('--data_size', default=41579, type=int, help='[tweet2014: 41579]')
     parser.add_argument('--learning_rate', default=1e-5, type=float, help='')
