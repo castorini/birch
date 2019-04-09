@@ -74,7 +74,7 @@ def train(args):
 
         print("[train] loss: {}".format(tr_loss))
         best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score,
-                                 epoch, args.model_type)
+                                 epoch, args.model_type, step)
 
     scores = test(args, split="test")
     print_scores(scores)
