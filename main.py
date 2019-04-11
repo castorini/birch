@@ -34,6 +34,8 @@ def train(args):
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs,
                                train_dataset.data_size, args.batch_size)
 
+    print('Datasets created: {}'.format(torch.cuda.memory_allocated()))
+
     model.train()
     global_step = 0
     best_score = 0
@@ -43,10 +45,11 @@ def train(args):
         print("epoch {} ............".format(epoch))
         tr_loss = 0
         # random.shuffle(train_dataset)
-        # counter = 0
+        counter = 0
         while True:
+            print('Loop {}: {}'.format(counter, torch.cuda.memory_allocated()))
             # print(counter)
-            # counter += 1
+            counter += 1
             batch = train_dataset.load_batch()
             if batch is None:
                 break
@@ -61,8 +64,11 @@ def train(args):
 
             if args.eval_steps > 0 and step % args.eval_steps == 0:
                 print("step: {}".format(step))
+                print('Before eval: {}'.format(torch.cuda.memory_allocated()))
                 best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path,
                                          best_score, epoch, args.model_type, step)
+                print(
+                    'After eval: {}'.format(torch.cuda.memory_allocated()))
                 torch.cuda.empty_cache()
 
             step += 1
@@ -71,6 +77,8 @@ def train(args):
             del mask_tensor
             del label_tensor
             torch.cuda.empty_cache()
+
+            print('After delete: {}'.format(torch.cuda.memory_allocated()))
 
         print("[train] loss: {}".format(tr_loss))
         best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score,
