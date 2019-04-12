@@ -14,7 +14,8 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
         model = BertForSequenceClassification.from_pretrained(base_model, num_labels=num_labels)
         # Load pre-trained model tokenizer (vocabulary)
     elif model_type == "BertForNextSentencePrediction":
-        model = BertForNextSentencePrediction.from_pretrained(base_model)
+        # model = BertForNextSentencePrediction.from_pretrained(base_model)
+        model = BertForNextSentencePrediction.from_pretrained("models/pytorch_msmarco")
     elif model_type == "BertForTokenClassification":
         model = BertForTokenClassification.from_pretrained(base_model, num_labels=num_labels)
     elif model_type == "BertMSE":
@@ -23,7 +24,8 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
         print("[Error]: unsupported model type")
         return None, None
     
-    tokenizer = BertTokenizer.from_pretrained(base_model)
+    # tokenizer = BertTokenizer.from_pretrained(base_model)
+    tokenizer = BertTokenizer.from_pretrained("bert-large-uncased")
     model.to(device)
     return model, tokenizer
 

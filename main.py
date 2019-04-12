@@ -20,10 +20,11 @@ if torch.cuda.is_available():
 
 def train(args):
     if args.load_trained:
-        epoch, arch, model, tokenizer, scores, _ = load_checkpoint(args.pytorch_dump_path)
+        epoch, arch, model, tokenizer, scores, _, step = load_checkpoint(args.pytorch_dump_path)
     else:
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device, chinese=args.chinese,
                                                            num_labels=args.num_labels)
+        step = 0
 
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device,
                                   args.data_format, add_url=True, padding=args.padding)
@@ -34,22 +35,21 @@ def train(args):
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs,
                                train_dataset.data_size, args.batch_size)
 
-    print('Datasets created: {}'.format(torch.cuda.memory_allocated()))
+    # print('Datasets created: {}'.format(torch.cuda.memory_allocated() * 1e-9))
 
     model.train()
     global_step = 0
     best_score = 0
     print('training')
     for epoch in range(1, args.num_train_epochs + 1):
-        step = 0
         print("epoch {} ............".format(epoch))
         tr_loss = 0
         # random.shuffle(train_dataset)
-        counter = 0
+        # counter = 0
         while True:
-            print('Loop {}: {}'.format(counter, torch.cuda.memory_allocated()))
+            # print('Loop {}: {}'.format(counter, torch.cuda.memory_allocated() * 1e-9))
             # print(counter)
-            counter += 1
+            # counter += 1
             batch = train_dataset.load_batch()
             if batch is None:
                 break
@@ -64,25 +64,29 @@ def train(args):
 
             if args.eval_steps > 0 and step % args.eval_steps == 0:
                 print("step: {}".format(step))
-                print('Before eval: {}'.format(torch.cuda.memory_allocated()))
+                # print('Before eval: {}'.format(torch.cuda.memory_allocated() * 1e-9))
                 best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path,
                                          best_score, epoch, args.model_type, step)
-                print(
-                    'After eval: {}'.format(torch.cuda.memory_allocated()))
-                torch.cuda.empty_cache()
+            #     print(
+            #         'After eval: {}'.format(torch.cuda.memory_allocated() * 1e-9))
+            #     torch.cuda.empty_cache()
 
             step += 1
             del tokens_tensor
             del segments_tensor
             del mask_tensor
             del label_tensor
-            torch.cuda.empty_cache()
+            # torch.cuda.empty_cache()
 
-            print('After delete: {}'.format(torch.cuda.memory_allocated()))
+            # print('After delete: {}'.format(torch.cuda.memory_allocated() * 1e-9))
+
+        step = 0
 
         print("[train] loss: {}".format(tr_loss))
         best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score,
                                  epoch, args.model_type, step)
+
+        print('asdasd')
 
     scores = test(args, split="test")
     print_scores(scores)
