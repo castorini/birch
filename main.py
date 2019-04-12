@@ -20,11 +20,12 @@ if torch.cuda.is_available():
 
 def train(args):
     if args.load_trained:
-        epoch, arch, model, tokenizer, scores, _, step = load_checkpoint(args.pytorch_dump_path)
+        last_epoch, arch, model, tokenizer, scores, _, step = load_checkpoint(args.pytorch_dump_path)
     else:
         model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device, chinese=args.chinese,
                                                            num_labels=args.num_labels)
         step = 0
+        last_epoch = 1
 
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device,
                                   args.data_format, add_url=True, padding=args.padding)
@@ -41,7 +42,7 @@ def train(args):
     global_step = 0
     best_score = 0
     print('training')
-    for epoch in range(1, args.num_train_epochs + 1):
+    for epoch in range(last_epoch, args.num_train_epochs + 1):
         print("epoch {} ............".format(epoch))
         tr_loss = 0
         # random.shuffle(train_dataset)
