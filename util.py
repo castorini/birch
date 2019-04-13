@@ -25,7 +25,7 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
         return None, None
     
     # tokenizer = BertTokenizer.from_pretrained(base_model)
-    tokenizer = BertTokenizer.from_pretrained("models/bert-large-uncased")
+    tokenizer = BertTokenizer.from_pretrained("models/bert-large-uncased-vocab.txt")
     model.to(device)
     return model, tokenizer
 
