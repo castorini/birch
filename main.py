@@ -20,7 +20,9 @@ def train(args):
     if args.load_trained:
         epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
     else:
-        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device, chinese=args.chinese,
+        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, base_model=args.base_model,
+                                                           base_tokenizer=args.base_tokenizer,
+                                                           device=args.device, chinese=args.chinese,
                                                            num_labels=args.num_labels)
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device,
                                   args.data_format)
@@ -206,6 +208,9 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', default='/data/wyang/ShortTextSemanticSimilarity/data/corpora/', help='')
     parser.add_argument('--data_name', default='annotation', help='annotation or youzan_new or tweet')
     parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
+    parser.add_argument('--base_model', default=None, help='[None, path to local file]')
+    parser.add_argument('--base_tokenizer', default=None,
+                        help='[None, path to local file]')
     parser.add_argument('--load_trained', action='store_true', default=False, help='')
     parser.add_argument('--chinese', action='store_true', default=False, help='')
     parser.add_argument('--eval_steps', default=-1, type=int,

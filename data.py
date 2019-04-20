@@ -140,7 +140,7 @@ class DataGenerator(object):
         return indexed_tokens
 
     def tokenize_two(self, a, b):
-        b_index = self.tokenize_index(b)
+        # b_index = self.tokenize_index(b)
         tokenized_text_a = ["[CLS]"] + self.tokenizer.tokenize(a) + ["[SEP]"]
         tokenized_text_b = self.tokenizer.tokenize(b)
         tokenized_text_b = tokenized_text_b[:510 - len(tokenized_text_a)]
