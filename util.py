@@ -4,12 +4,13 @@ from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, B
 from pytorch_pretrained_bert.optimization import BertAdam
 from model import BertMSE
 
-def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", device="cuda", chinese=False, num_labels=2):
+def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", base_model=None, base_tokenizer=None, device="cuda", chinese=False, num_labels=2):
     # Load pre-trained model (weights)
-    if chinese:
-        base_model = "bert-base-chinese"
-    else:
-        base_model = "bert-base-uncased"
+    if base_model is None:
+        if chinese:
+            base_model = "bert-base-chinese"
+        else:
+            base_model = "bert-base-uncased"
     if model_type == "BertForSequenceClassification":
         model = BertForSequenceClassification.from_pretrained(base_model, num_labels=num_labels)
         # Load pre-trained model tokenizer (vocabulary)
@@ -22,8 +23,13 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     else:
         print("[Error]: unsupported model type")
         return None, None
-    
-    tokenizer = BertTokenizer.from_pretrained(base_model)
+
+    if base_tokenizer is None:
+        # Download from huggingface
+        tokenizer = BertTokenizer.from_pretrained(base_model)
+    else:
+        # Load local file
+        tokenizer = BertTokenizer.from_pretrained(base_tokenizer)
     model.to(device)
     return model, tokenizer
 
