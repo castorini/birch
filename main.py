@@ -111,7 +111,7 @@ def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, be
 
 def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
     if model is None:
-        epoch, arch, model, tokenizer, scores, label_map = load_checkpoint(
+        epoch, arch, model, tokenizer, scores, label_map, step = load_checkpoint(
             args.pytorch_dump_path)
         assert test_dataset is None
         print("Load {} set".format(split))
