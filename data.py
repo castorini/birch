@@ -30,6 +30,7 @@ class DataGenerator(object):
                                       ID.replace("\n", ""), url.replace("\n", "")])
                     self.max_a_len = max(self.max_a_len, len(a.split(' ')))
                     self.max_b_len = max(self.max_b_len, len(b.split(' ')))
+                    self.lengths.append(len(b.replace("\n", "").split()))
             else:
                 for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
                     self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
@@ -103,8 +104,7 @@ class DataGenerator(object):
                     print("doc: {}".format(doc))
                 self.data.append([label, query, doc])
         else:
-            self.f = open(os.path.join(data_path, data_name))
-            # self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
+            self.f = open(os.path.join(data_path, "{}/{}_{}.csv".format(data_name, data_name, split)))
             first = True
             for l in self.f:
                 ls = l.replace("\n", "").split("\t")

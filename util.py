@@ -13,10 +13,8 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
             base_model = "bert-base-uncased"
     if model_type == "BertForSequenceClassification":
         model = BertForSequenceClassification.from_pretrained(base_model, num_labels=num_labels)
-        # Load pre-trained model tokenizer (vocabulary)
     elif model_type == "BertForNextSentencePrediction":
-        # model = BertForNextSentencePrediction.from_pretrained(base_model)
-        model = BertForNextSentencePrediction.from_pretrained("models/pytorch_msmarco.tar.gz")
+        model = BertForNextSentencePrediction.from_pretrained(base_model)
     elif model_type == "BertForTokenClassification":
         model = BertForTokenClassification.from_pretrained(base_model, num_labels=num_labels)
     elif model_type == "BertMSE":
@@ -24,9 +22,6 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     else:
         print("[Error]: unsupported model type")
         return None, None
-    
-    # tokenizer = BertTokenizer.from_pretrained(base_model)
-    tokenizer = BertTokenizer.from_pretrained("models/bert-large-uncased-vocab.txt")
 
     if base_tokenizer is None:
         # Download from huggingface

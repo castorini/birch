@@ -30,15 +30,13 @@ def train(args):
         last_epoch = 1
 
     train_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device,
-                                  args.data_format, add_url=True, padding=args.padding)
+                                  args.data_format, add_url=False, padding=args.padding)
     validate_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device,
-                                     args.data_format, label_map=train_dataset.label_map, add_url=True, padding=args.padding)
+                                     args.data_format, label_map=train_dataset.label_map, add_url=False, padding=args.padding)
     test_dataset = DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device,
-                                 args.data_format, label_map=train_dataset.label_map, add_url=True, padding=args.padding)
+                                 args.data_format, label_map=train_dataset.label_map, add_url=False, padding=args.padding)
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion, args.num_train_epochs,
                                train_dataset.data_size, args.batch_size)
-
-    # print('Datasets created: {}'.format(torch.cuda.memory_allocated() * 1e-9))
 
     model.train()
     global_step = 0
@@ -48,16 +46,12 @@ def train(args):
         print("epoch {} ............".format(epoch))
         tr_loss = 0
         # random.shuffle(train_dataset)
-        # counter = 0
         while True:
-            # print('Loop {}: {}'.format(counter, torch.cuda.memory_allocated() * 1e-9))
-            # print(counter)
-            # counter += 1
             batch = train_dataset.load_batch()
             if batch is None:
                 break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch[:4]
-            del batch
+            # del batch
             loss = model(tokens_tensor, segments_tensor, mask_tensor, label_tensor)
             loss.backward()
             tr_loss += loss.item()
@@ -67,29 +61,20 @@ def train(args):
 
             if args.eval_steps > 0 and step % args.eval_steps == 0:
                 print("step: {}".format(step))
-                # print('Before eval: {}'.format(torch.cuda.memory_allocated() * 1e-9))
                 best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path,
                                          best_score, epoch, args.model_type, step)
-            #     print(
-            #         'After eval: {}'.format(torch.cuda.memory_allocated() * 1e-9))
-            #     torch.cuda.empty_cache()
 
             step += 1
-            del tokens_tensor
-            del segments_tensor
-            del mask_tensor
-            del label_tensor
-            # torch.cuda.empty_cache()
-
-            # print('After delete: {}'.format(torch.cuda.memory_allocated() * 1e-9))
+            # del tokens_tensor
+            # del segments_tensor
+            # del mask_tensor
+            # del label_tensor
 
         step = 0
 
         print("[train] loss: {}".format(tr_loss))
         best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score,
                                  epoch, args.model_type, step)
-
-        print('asdasd')
 
     scores = test(args, split="test")
     print_scores(scores)
@@ -124,21 +109,15 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
         model.eval()
         prediction_score_list, prediction_index_list, labels = [], [], []
         f = open(args.output_path, "w")
-        f2 = open(args.output_path2, "w")
-        qrelf = open(split + '.' + args.qrels_path, "w")
+        pf = open(args.predict_path, "w")
+        # qrelf = open(split + '.' + args.qrels_path, "w")
 
         lineno = 1
         label_map_reverse = {}
         for k in test_dataset.label_map:
             label_map_reverse[test_dataset.label_map[k]] = k
         qid_tensor, docid_tensor = None, None
-        import time
-        start = time.time()
-        # counter = 0
         while True:
-            # print(counter, flush=True)
-            # counter += 1
-            # if counter > 100: break
             batch = test_dataset.load_batch()
             if batch is None:
                 break
@@ -148,8 +127,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
                 tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor = batch
             else:
                 tokens_tensor, segments_tensor, mask_tensor, label_tensor = batch
-            del batch
-            # print(tokens_tensor.shape, segments_tensor.shape, mask_tensor.shape)
+            # del batch
             predictions = model(tokens_tensor, segments_tensor, mask_tensor)
             scores = predictions.cpu().detach().numpy()
             predicted_index = list(torch.argmax(predictions, dim=-1).cpu().numpy())
@@ -170,8 +148,8 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
                 for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
                                                    scores, label_batch):
                     f.write("{}\t{}\n".format(lineno, p))
-                    f2.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
-                    qrelf.write("{} Q0 {} {}\n".format(qid, docid, label))
+                    pf.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
+                    # qrelf.write("{} Q0 {} {}\n".format(qid, docid, label))
                     lineno += 1
             elif args.data_format == "ontonote":
                 tokens = tokens_tensor.cpu().detach().numpy()
@@ -212,21 +190,20 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
             predicted_index_new = predicted_index_new if len(predicted_index_new) > 0 else predicted_index
             labels.extend(label_new)
             prediction_index_list += predicted_index_new
-            del predictions
-
-            # torch.cuda.empty_cache()
+            # del predictions
 
     f.close()
-    f2.close()
-    qrelf.close()
+    pf.close()
+    # qrelf.close()
 
     torch.cuda.empty_cache()
 
     model.train()
 
     if args.data_format == "trec":
-        map, mrr, p30 = evaluate_trec(predictions_file=args.output_path2, \
-                                          qrels_file=split + '.' + args.qrels_path)
+        map, mrr, p30 = evaluate_trec(predictions_file=args.predict_path, \
+                                          # qrels_file=split + '.' + args.qrels_path)
+                                        qrels_file='./qrels.microblog.txt')
         return [["map", "mrr", "p30"], [map, mrr, p30]]
     elif args.data_format == "glue" or args.data_format == "regression":
         pearson_r, spearman_r = evaluate_glue(prediction_score_list, labels)
@@ -243,12 +220,12 @@ if __name__ == '__main__':
     parser.add_argument('--mode', default='train', help='[train, test]')
     parser.add_argument('--device', default='cuda', help='[cuda, cpu]')
     parser.add_argument('--padding', default=False)
-    parser.add_argument('--batch_size', default=16, type=int, help='[1, 8, 16, 32]')
+    parser.add_argument('--batch_size', default=8, type=int, help='[1, 8, 16, 32]')
     parser.add_argument('--data_size', default=41579, type=int, help='[tweet2014: 41579]')
-    parser.add_argument('--learning_rate', default=1e-5, type=float, help='')
+    parser.add_argument('--learning_rate', default=3e-6, type=float, help='')
     parser.add_argument('--num_train_epochs', default=3, type=int, help='')
-    parser.add_argument('--data_path', default='/data/wyang/ShortTextSemanticSimilarity/data/corpora/', help='')
-    parser.add_argument('--data_name', default='annotation', help='annotation or youzan_new or tweet')
+    parser.add_argument('--data_path', default='data', help='')
+    parser.add_argument('--data_name', default='mb', help='mb, robust04')
     parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
     parser.add_argument('--base_model', default=None, help='[None, path to local file]')
     parser.add_argument('--base_tokenizer', default=None,
@@ -259,10 +236,10 @@ if __name__ == '__main__':
                         help='evaluation per [eval_steps] steps, -1 for evaluation per epoch')
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
     parser.add_argument('--output_path', default='predict.tmp', help='')
-    parser.add_argument('--output_path2', default='predict.trec', help='')
+    parser.add_argument('--predict_path', default='predict.trec', help='')
     parser.add_argument('--qrels_path', default='qrels.trec', help='')
     parser.add_argument('--num_labels', default=2, type=int, help='')
-    parser.add_argument('--data_format', default='classification', help='[classification, trec, tweet]')
+    parser.add_argument('--data_format', default='trec', help='[classification, trec, robust04]')
     parser.add_argument('--warmup_proportion', default=0.1, type=float,
                         help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()
