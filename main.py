@@ -22,7 +22,9 @@ def train(args):
     if args.load_trained:
         last_epoch, arch, model, tokenizer, scores, _, step = load_checkpoint(args.pytorch_dump_path)
     else:
-        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device, chinese=args.chinese,
+        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, base_model=args.base_model,
+                                                           base_tokenizer=args.base_tokenizer,
+                                                           device=args.device, chinese=args.chinese,
                                                            num_labels=args.num_labels)
         step = 0
         last_epoch = 1
@@ -247,7 +249,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_train_epochs', default=3, type=int, help='')
     parser.add_argument('--data_path', default='/data/wyang/ShortTextSemanticSimilarity/data/corpora/', help='')
     parser.add_argument('--data_name', default='annotation', help='annotation or youzan_new or tweet')
-    parser.add_argument('--pytorch_dump_path', default='models/saved.model_tweet2014_3_best', help='')
+    parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
+    parser.add_argument('--base_model', default=None, help='[None, path to local file]')
+    parser.add_argument('--base_tokenizer', default=None,
+                        help='[None, path to local file]')
     parser.add_argument('--load_trained', action='store_true', default=False, help='')
     parser.add_argument('--chinese', action='store_true', default=False, help='')
     parser.add_argument('--eval_steps', default=-1, type=int,

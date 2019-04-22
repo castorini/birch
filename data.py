@@ -169,7 +169,8 @@ class DataGenerator(object):
         tokenized_text_a = ["[CLS]"] + tokenized_text_a + ["[SEP]"]
         # print('len: {}\n{}'.format(len(tokenized_text_a), tokenized_text_a))
 
-
+        # b_index = self.tokenize_index(b)
+        tokenized_text_a = ["[CLS]"] + self.tokenizer.tokenize(a) + ["[SEP]"]
         tokenized_text_b = self.tokenizer.tokenize(b)
 
         if self.padding:
