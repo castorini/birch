@@ -219,7 +219,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', default='train', help='[train, test]')
     parser.add_argument('--device', default='cuda', help='[cuda, cpu]')
-    parser.add_argument('--padding', default=False)
+    parser.add_argument('--padding', default=None, help='[None, left, right]')
     parser.add_argument('--batch_size', default=8, type=int, help='[1, 8, 16, 32]')
     parser.add_argument('--data_size', default=41579, type=int, help='[tweet2014: 41579]')
     parser.add_argument('--learning_rate', default=3e-6, type=float, help='')

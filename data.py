@@ -8,7 +8,7 @@ MAX_SENT_LEN = 2115
 
 class DataGenerator(object):
     def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", data_format="trec",
-                 add_url=False, label_map=None, padding=False):
+                 add_url=False, label_map=None, padding=None):
         super(DataGenerator, self).__init__()
         self.data = []
         self.data_format = data_format
@@ -155,36 +155,30 @@ class DataGenerator(object):
         return indexed_tokens
 
     def tokenize_two(self, a, b):
-        b_index = self.tokenize_index(b)
         tokenized_text_a = self.tokenizer.tokenize(a)
-
         if self.padding:
-            # Pad query
             query_padding = ['[PAD]'] * (MAX_QUERY_LEN - len(tokenized_text_a))
-            # left pad
-            # tokenized_text_a = query_padding + tokenized_text_a
-            # right pad
-            tokenized_text_a = tokenized_text_a + query_padding
-
+            # Pad query
+            if self.padding == 'left':
+                tokenized_text_a = query_padding + tokenized_text_a
+            elif self.padding == 'right':
+                tokenized_text_a = tokenized_text_a + query_padding
         tokenized_text_a = ["[CLS]"] + tokenized_text_a + ["[SEP]"]
-        # print('len: {}\n{}'.format(len(tokenized_text_a), tokenized_text_a))
 
-        # b_index = self.tokenize_index(b)
-        tokenized_text_a = ["[CLS]"] + self.tokenizer.tokenize(a) + ["[SEP]"]
         tokenized_text_b = self.tokenizer.tokenize(b)
-
         if self.padding:
             # Pad sequence
-            doc_padding = ['[PAD]'] * (511 - len(tokenized_text_a))  # account for [SEP]
-            # right pad
-            tokenized_text_b = tokenized_text_b + doc_padding
-
+            doc_padding = ['[PAD]'] * (
+                        512 - len(tokenized_text_a))  # account for [SEP]
+            if self.padding == 'left':
+                tokenized_text_b = doc_padding + tokenized_text_b
+            if self.padding == 'right':
+                tokenized_text_b = tokenized_text_b + doc_padding
         tokenized_text_b = tokenized_text_b[:511 - len(tokenized_text_a)]
         tokenized_text_b.append("[SEP]")
-        # print('len: {}\n{}'.format(len(tokenized_text_b), tokenized_text_b))
+
         segments_ids = [0] * len(tokenized_text_a) + [1] * len(tokenized_text_b)
         tokenized_text = tokenized_text_a + tokenized_text_b
-        # print('len: {}'.format(len(tokenized_text)))
         # Convert token to vocabulary indices
         indexed_tokens = self.tokenizer.convert_tokens_to_ids(tokenized_text)
         return indexed_tokens, segments_ids
