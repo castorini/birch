@@ -21,6 +21,8 @@ class DataGenerator(object):
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
             self.fsim = open(os.path.join(data_path, "{}/{}/sim.txt".format(data_name, split)))
             self.fid = open(os.path.join(data_path, "{}/{}/id.txt".format(data_name, split)))
+            self.lengths = []
+
             if add_url:
                 self.furl = open(os.path.join(data_path, "{}/{}/url.txt".format(data_name, split)))
                 for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
@@ -34,7 +36,8 @@ class DataGenerator(object):
                                       ID.replace("\n", "")])
                     self.max_a_len = max(self.max_a_len, len(a.split(' ')))
                     self.max_b_len = max(self.max_b_len, len(b.split(' ')))
-
+                    self.lengths.append(len(b.replace("\n", "").split()))
+            print("{} {}".format(data_name, sum(self.lengths)/len(self.lengths)))
         elif data_format == "ontonote":
             self.f = open(os.path.join(data_path, "{}/{}.char.bmes".format(data_name, split)))
             label, token = [], []
