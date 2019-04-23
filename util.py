@@ -32,7 +32,10 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     return model, tokenizer
 
 def evaluate(predictions_file, qrels_file):
-    pargs = shlex.split("/bin/sh run_eval.sh '{}' '{}'".format(qrels_file, predictions_file))
+    cmd = "../Anserini/eval/trec_eval.9.0.4/trec_eval {judgement} {output} -m map -m recip_rank -m P.30".format(
+        judgement=qrels_file, output=predictions_file)
+    pargs = shlex.split(cmd)
+    print("running {}".format(cmd))
     p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pout, perr = p.communicate()
 
@@ -48,7 +51,7 @@ def evaluate(predictions_file, qrels_file):
 class DataGenerator(object):
     def __init__(self, data_path, data_name, split):
         super(DataGenerator, self).__init__()
-        self.tweet = 1 if "twitter" in data_path else 0
+        self.tweet = 1 if data_name == 'mb' else 0
         if self.tweet:
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
@@ -62,15 +65,16 @@ class DataGenerator(object):
         if self.tweet:
             for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
                 return sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), ID.replace("\n", ""), url.replace("\n", "")
+            return None, None, None, None, None
         else:
             for l in self.f:
                 label, sim, a, b, qid, docid, qidx, didx = \
                     l.replace("\n", "").split("\t")
                 return label, sim, a, b, qid, docid, qidx, didx
 
-        return None, None, None, None, None, None, None, None
+            return None, None, None, None, None, None, None, None
 
-def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda", tweet=False, add_url=True):
+def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda", add_url=False):
     test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
     data_set = []
     while True:

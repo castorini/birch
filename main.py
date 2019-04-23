@@ -60,9 +60,9 @@ def train(args):
     print_scores(scores)
 
 def eval_select(model, tokenizer, validate_dataset, test_dataset, model_path, best_score, epoch, arch):
-    scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer, test_dataset=validate_dataset)
+    scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer, test_dataset=validate_dataset, train=True)
     print_scores(scores_dev, mode="dev")
-    scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset)
+    scores_test = test(args, split="test", model=model, tokenizer=tokenizer, test_dataset=test_dataset, train=True)
     print_scores(scores_test)
      
     if scores_dev[1][0] > best_score:
@@ -96,17 +96,22 @@ def load_checkpoint(filename):
     state = torch.load(filename)
     return state['epoch'], state['arch'], state['model'], state['tokenizer'], state['scores']
 
-def test(args, split="test", model=None, tokenizer=None, test_dataset=None):
-    # if model is None:
-    #     epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
+def test(args, split="test", model=None, tokenizer=None, test_dataset=None, train=False):
+    if model is None:
+        epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
     # if test_dataset is None: 
     # model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
-    _, _, model, tokenizer, _ = load_checkpoint('saved.model_tweet2014_3_best')
+    # _, _, model, tokenizer, _ = load_checkpoint('saved.model_tweet2014_3_best')
     pickle.dump(tokenizer, open("tokenizer.pkl", "wb"))
 
-    print("Load test set")
-    test_dataset = load_trec_data(args.data_path, args.data_name,
-       args.batch_size, tokenizer, split, args.device)
+    # print("Load test set")
+    if train:
+        test_dataset = load_data(args.data_path, args.data_name,
+                                      args.batch_size, tokenizer, split,
+                                      args.device)
+    else:
+        test_dataset = load_trec_data(args.data_path, args.data_name,
+           args.batch_size, tokenizer, split, args.device)
     
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
@@ -156,7 +161,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_size', default=41579, type=int, help='[tweet2014: 41579]')
     parser.add_argument('--learning_rate', default=1e-5, type=float, help='')
     parser.add_argument('--num_train_epochs', default=3, type=int, help='')
-    parser.add_argument('--data_path', default='./', help='')
+    parser.add_argument('--data_path', default='data', help='')
     parser.add_argument('--data_name', default='robust04_bm25', help='annotation or youzan_new or tweet')
     parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
     parser.add_argument('--load_trained', action='store_true', default=False, help='')
@@ -168,8 +173,8 @@ if __name__ == '__main__':
     parser.add_argument('--warmup_proportion', default=0.1, type=float, help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()
     
-    # if args.mode == "train":
-    #     train(args)
-    # else:
-    scores = test(args)
-    print_scores(scores)
+    if args.mode == "train":
+        train(args)
+    else:
+        scores = test(args)
+        print_scores(scores)
