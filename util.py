@@ -12,12 +12,16 @@ from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, B
 from pytorch_pretrained_bert.optimization import BertAdam
 
 
-def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", device="cuda", chinese=False):
+def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification",
+                                    local_model=None, local_tokenizer=None,
+                                    device="cuda", chinese=False):
     # Load pre-trained model (weights)
-    if chinese:
-        base_model = "bert-base-chinese"
-    else:
-        base_model = "bert-base-uncased"
+    if local_model is None:
+        # Download from huggingface
+        if chinese:
+            base_model = "bert-base-chinese"
+        else:
+            base_model = "bert-base-uncased"
     if model_type == "BertForSequenceClassification":
         model = BertForSequenceClassification.from_pretrained(base_model)
         # Load pre-trained model tokenizer (vocabulary)
@@ -26,8 +30,13 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
     else:
         print("[Error]: unsupported model type")
         return None, None
-    
-    tokenizer = BertTokenizer.from_pretrained(base_model)
+
+    if local_tokenizer is None:
+        # Download from huggingface
+        tokenizer = BertTokenizer.from_pretrained(base_model)
+    else:
+        # Load local vocab file
+        tokenizer = BertTokenizer.from_pretrained(local_tokenizer)
     model.to(device)
     return model, tokenizer
 
@@ -71,7 +80,6 @@ class DataGenerator(object):
                 label, sim, a, b, qid, docid, qidx, didx = \
                     l.replace("\n", "").split("\t")
                 return label, sim, a, b, qid, docid, qidx, didx
-
             return None, None, None, None, None, None, None, None
 
 def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda", add_url=False):
@@ -124,7 +132,7 @@ def load_data(data_path, data_name, batch_size, tokenizer, split="train", device
             data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor))
             test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docqid_batch = [], [], [], [], [], []
             yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor) 
-        
+
         # if split != "train":
         #    break
         yield None 

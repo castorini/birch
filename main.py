@@ -21,9 +21,13 @@ if torch.cuda.is_available():
 
 def train(args):
     if args.load_trained:
-        epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path) 
+        last_epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
     else:
-        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
+        # May load local file or download from huggingface
+        model, tokenizer = load_pretrained_model_tokenizer(args.model_type, local_model=args.local_model,
+                                                            local_tokenizer=args.local_tokenizer,
+                                                           device=args.device)
+        last_epoch = 1
     train_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "train", args.device)
     validate_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "dev", args.device)
     test_dataset = load_data(args.data_path, args.data_name, args.batch_size, tokenizer, "test", args.device)
@@ -32,9 +36,10 @@ def train(args):
     model.train()
     global_step = 0
     best_score = 0
-    for epoch in range(1, args.num_train_epochs+1):
+    for epoch in range(last_epoch, args.num_train_epochs + 1):
         tr_loss = 0
         # random.shuffle(train_dataset)
+        print('epoch: {}'.format(epoch))
         for step, batch in enumerate(tqdm(train_dataset)):
             if batch is None:
                 break
@@ -51,10 +56,10 @@ def train(args):
             global_step += 1
             
             if args.eval_steps > 0 and step % args.eval_steps == 0:
-                best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, args.model_type)
+                best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, step, args.model_type)
 
         print("[train] loss: {}".format(tr_loss))
-        best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, args.model_type)
+        best_score = eval_select(model, tokenizer, validate_dataset, test_dataset, args.pytorch_dump_path, best_score, epoch, step, args.model_type)
 
     scores = test(args, split="test")
     print_scores(scores)
@@ -96,20 +101,17 @@ def load_checkpoint(filename):
     state = torch.load(filename)
     return state['epoch'], state['arch'], state['model'], state['tokenizer'], state['scores']
 
-def test(args, split="test", model=None, tokenizer=None, test_dataset=None, train=False):
+def test(args, split="test", model=None, tokenizer=None):
     if model is None:
         epoch, arch, model, tokenizer, scores = load_checkpoint(args.pytorch_dump_path)
-    # if test_dataset is None: 
-    # model, tokenizer = load_pretrained_model_tokenizer(args.model_type, device=args.device)
-    # _, _, model, tokenizer, _ = load_checkpoint('saved.model_tweet2014_3_best')
-    pickle.dump(tokenizer, open("tokenizer.pkl", "wb"))
 
-    # print("Load test set")
-    if train:
+    if split == 'train':
+        # Load MB data
         test_dataset = load_data(args.data_path, args.data_name,
                                       args.batch_size, tokenizer, split,
                                       args.device)
     else:
+        # Load Robust04 data
         test_dataset = load_trec_data(args.data_path, args.data_name,
            args.batch_size, tokenizer, split, args.device)
     
@@ -149,7 +151,7 @@ def test(args, split="test", model=None, tokenizer=None, test_dataset=None, trai
     torch.cuda.empty_cache()
     model.train()
 
-    return [["map", "mrr", "p30"],[map, mrr, p30]]
+    return [["map", "mrr", "p30"], [map, mrr, p30]]
     # return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
     # return [["acc", "p@1", "precision", "recall", "f1"], [acc, p1, pre, rec, f1]]
 
@@ -166,6 +168,8 @@ if __name__ == '__main__':
     parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
     parser.add_argument('--load_trained', action='store_true', default=False, help='')
     parser.add_argument('--chinese', action='store_true', default=False, help='')
+    parser.add_argument('--local_model', default=None, help='[None, path to local model file]')
+    parser.add_argument('--local_tokenizer', default=None, help='[None, path to local vocab file]')
     parser.add_argument('--eval_steps', default=-1, type=int, help='evaluation per [eval_steps] steps, -1 for evaluation per epoch')
     parser.add_argument('--model_type', default='BertForNextSentencePrediction', help='')
     parser.add_argument('--output_path', default='prediction.tmp', help='')
