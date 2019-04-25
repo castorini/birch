@@ -1,17 +1,15 @@
-# Bert-Chinese
+# BERT Finetune
 
 ### Install dependency
 ```
 pip install -r requirements.txt
 ```
 
-### Train
-```
-python main.py
-```
+### Instructions
 
+- Train: Change and run the `./finetune.sh` script
+- Test: Change and run the `./predict.sh` script
 
-### Test
-```
-python main.py -m test
-```
+#### Arguments
+
+TODO: brief explanation for each argument
