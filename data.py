@@ -27,7 +27,8 @@ class DataGenerator(object):
             return None, None, None, None, None, None, None, None
 
 
-def load_data(data_path, data_name, batch_size, tokenizer, split="train", device="cuda", add_url=False):
+def load_data(data_path, data_name, batch_size, tokenizer, split="train",
+              device="cuda", add_url=False, padding=None, max_query_len=10):
     test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
     data_set = []
     while True:
@@ -37,13 +38,31 @@ def load_data(data_path, data_name, batch_size, tokenizer, split="train", device
             if label is None:
                 break
 
+            # Pad query
+            if padding:
+                query_padding = ['[PAD]'] * (max_query_len - len(a.split(' ')))
+                query_padding = ' '.join(query_padding)
+                if padding == 'left':
+                    a = query_padding + " " + a
+                elif padding == 'right':
+                    a = a + " " + query_padding
             a = "[CLS] " + a + " [SEP]"
+
             if add_url:
                 b = b + " " + url
             b = b + " [SEP]"
 
             a_index = tokenize_index(a, tokenizer)
             b_index = tokenize_index(b, tokenizer)
+
+            # Pad sequence
+            if padding:
+                doc_padding = [0] * (
+                            512 - len(a_index) - len(b_index))
+                if padding == 'left':
+                    b_index = doc_padding + b_index
+                elif padding == 'right':
+                    b_index = b_index + doc_padding
 
             combine_index = a_index + b_index
             segments_ids = [0] * len(a_index) + [1] * len(b_index)

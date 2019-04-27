@@ -31,7 +31,7 @@ def train(args):
                                                            device=args.device)
         last_epoch = 1
     train_dataset = load_data(args.data_path, args.data_name, args.batch_size,
-                              tokenizer, split="train", device=args.device)
+                              tokenizer, split="train", device=args.device, padding=args.padding)
     optimizer = init_optimizer(model, args.learning_rate,
                                args.warmup_proportion, args.num_train_epochs,
                                args.data_size, args.batch_size)
@@ -98,7 +98,7 @@ def test(args, split="test", model=None, tokenizer=None, training=False):
         # Load MB data
         test_dataset = load_data(args.data_path, args.data_name,
                                  args.batch_size, tokenizer, split,
-                                 device=args.device)
+                                 device=args.device, padding=args.padding)
     else:
         # Load Robust04 data
         test_dataset = load_trec_data(args.data_path, args.data_name,
@@ -167,6 +167,7 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--chinese', action='store_true', default=False,
                         help='')
+    parser.add_argument('--padding', default=None, help='[None, left, right]')
     parser.add_argument('--trec_eval_path',
                         default='eval/trec_eval.9.0.4/trec_eval', help='')
     parser.add_argument('--local_model', default=None,
