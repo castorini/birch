@@ -25,53 +25,98 @@
 # python3 compare_runs.py --base run.robust04.rm3 --comparison run.MB.cv --qrels
 # qrels.robust2004.txt --metric map
 
-#
-##MB 5 folders alpha
+###
+
+## MB 5 folders alpha
 # python eval_bert.py 3 0.6 0 0 0 test
 # python eval_bert.py 3 0.6 0 0 1 test
 # python eval_bert.py 3 0.7 0 0 2 test
 # python eval_bert.py 3 0.5 0 0 3 test
 # python eval_bert.py 3 0.6 0 0 4 test
-# cat run.MB.cv.test.* > run.MB.cv.a
+# cat run.tweet2014.cv.test.* > run.tweet2014.cv.a
 #
-##MB 5 folders alpha + beta
+## MB 5 folders alpha + beta
 # python eval_bert.py 3 0.6 0.1 0 0 test
 # python eval_bert.py 3 0.6 0.1 0 1 test
 # python eval_bert.py 3 0.6 0.1 0 2 test
 # python eval_bert.py 3 0.5 0.0 0 3 test
 # python eval_bert.py 3 0.6 0.2 0 4 test
-# cat run.MB.cv.test.* > run.MB.cv.b
+# cat run.tweet2014.cv.test.* > run.tweet2014.cv.b
 #
-##MB 5 folders alpha + beta + gamma
+## MB 5 folders alpha + beta + gamma
 # python eval_bert.py 3 0.6 0.1 0.0 0 test
 # python eval_bert.py 3 0.6 0.1 0.1 1 test
 # python eval_bert.py 3 0.6 0.1 0.1 2 test
 # python eval_bert.py 3 0.5 0.0 0.0 3 test
 # python eval_bert.py 3 0.6 0.1 0.1 4 test
-# cat run.MB.cv.test.* > run.MB.cv.c
+# cat run.tweet2014.cv.test.* > run.tweet2014.cv.c
 
 ###
 
-# MSMARCO 5 folders alpha
-python eval_bert.py 3 0.9 0 0 0 test
-python eval_bert.py 3 0.9 0 0 1 test
-python eval_bert.py 3 0.9 0 0 2 test
-python eval_bert.py 3 0.9 0 0 3 test
-python eval_bert.py 3 0.9 0 0 4 test
-cat run.msmarco2.cv.test.* > run.msmarco2.cv.a
+## Large-MB 5 folders alpha
+# python eval_bert.py 3 0.4 0 0 0 test
+# python eval_bert.py 3 0.3 0 0 1 test
+# python eval_bert.py 3 0.4 0 0 2 test
+# python eval_bert.py 3 0.3 0 0 3 test
+# python eval_bert.py 3 0.3 0 0 4 test
+# cat run.bert-large.cv.test.* > run.bert-large.cv.a
+#
+## Large-MB 5 folders alpha + beta
+# python eval_bert.py 3 0.4 0.1 0 0 test
+# python eval_bert.py 3 0.3 0.1 0 1 test
+# python eval_bert.py 3 0.4 0.1 0 2 test
+# python eval_bert.py 3 0.3 0.1 0 3 test
+# python eval_bert.py 3 0.3 0.1 0 4 test
+# cat run.bert-large.cv.test.* > run.bert-large.cv.b
+#
+## Large-MB 5 folders alpha + beta + gamma
+# python eval_bert.py 3 0.4 0.1 0 0 test
+# python eval_bert.py 3 0.3 0.1 0 1 test
+# python eval_bert.py 3 0.4 0.1 0 2 test
+# python eval_bert.py 3 0.3 0.1 0 3 test
+# python eval_bert.py 3 0.3 0.1 0 4 test
+# cat run.bert-large.cv.test.* > run.bert-large.cv.c
 
-# MSMARCO 5 folders alpha+beta
-python eval_bert.py 3 0.9 0.4 0 0 test
-python eval_bert.py 3 0.9 0.4 0 1 test
-python eval_bert.py 3 0.9 0.4 0 2 test
-python eval_bert.py 3 0.9 0.4 0 3 test
-python eval_bert.py 3 0.9 0.4 0 4 test
-cat run.msmarco2.cv.test.* > run.msmarco2.cv.b
+###
 
-# MSMARCO 5 folders alpha+beta+gamma
-python eval_bert.py 3 0.9 0.4 0.5 0 test
-python eval_bert.py 3 0.9 0.5 0.4 1 test
-python eval_bert.py 3 0.9 0.4 0.4 2 test
-python eval_bert.py 3 0.9 0.5 0.4 3 test
-python eval_bert.py 3 0.9 0.5 0.4 4 test
-cat run.msmarco2.cv.test.* > run.msmarco2.cv.c
+## MSMARCO-MB 5 folders alpha
+# python eval_bert.py 3 0.5 0 0 0 test
+# python eval_bert.py 3 0.5 0 0 1 test
+# python eval_bert.py 3 0.5 0 0 2 test
+# python eval_bert.py 3 0.3 0 0 3 test
+# python eval_bert.py 3 0.4 0 0 4 test
+# cat run.msmarco.cv.test.* > run.msmarco.cv.a
+
+## MSMARCO-MB 5 folders alpha + beta
+# python eval_bert.py 3 0.5 0.4 0 0 test
+# python eval_bert.py 3 0.5 0.4 0 1 test
+# python eval_bert.py 3 0.5 0.4 0 2 test
+# python eval_bert.py 3 0.5 0.4 0 3 test
+# python eval_bert.py 3 0.5 0.4 0 4 test
+# cat run.msmarco.cv.test.* > run.msmarco.cv.b
+
+## MSMARCO-MB 5 folders alpha + beta + gamma
+# python eval_bert.py 3 0.5 0.2 0.3 0 test
+# python eval_bert.py 3 0.5 0.2 0.3 1 test
+# python eval_bert.py 3 0.5 0.2 0.3 2 test
+# python eval_bert.py 3 0.5 0.2 0.3 3 test
+# python eval_bert.py 3 0.5 0.3 0.2 4 test
+# cat run.msmarco.cv.test.* > run.msmarco.cv.c
+
+###
+
+## CAR-MB 5 folders alpha
+# python eval_bert.py 3 0.4 0 0 0 test
+# python eval_bert.py 3 0.4 0 0 1 test
+# python eval_bert.py 3 0.5 0 0 2 test
+# python eval_bert.py 3 0.3 0 0 3 test
+# python eval_bert.py 3 0.4 0 0 4 test
+# cat run.car.cv.test.* > run.car.cv.a
+
+## CAR-MB 5 folders alpha + beta
+# python eval_bert.py 3 0.4 0.2 0 0 test
+# python eval_bert.py 3 0.4 0.3 0 1 test
+# python eval_bert.py 3 0.5 0.3 0 2 test
+# python eval_bert.py 3 0.4 0.3 0 3 test
+# python eval_bert.py 3 0.4 0.3 0 4 test
+# cat run.car.cv.test.* > run.car.cv.b
