@@ -89,12 +89,12 @@ def eval_select(model, tokenizer, model_path, best_score, epoch, arch):
     return best_score
 
 
-def test(args, split="test", model=None, tokenizer=None, training=False):
+def test(args, split="test", model=None, tokenizer=None, training_or_lm=False):
     if model is None:
         epoch, arch, model, tokenizer, scores = load_checkpoint(
             args.pytorch_dump_path)
 
-    if training:
+    if training_or_lm:
         # Load MB data
         test_dataset = load_data(args.data_path, args.data_name,
                                  args.batch_size, tokenizer, split,
