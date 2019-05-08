@@ -74,10 +74,10 @@ def train(args):
 
 def eval_select(model, tokenizer, model_path, best_score, epoch, arch):
     scores_dev = test(args, split="dev", model=model, tokenizer=tokenizer,
-                      training=True)
+                      training_or_lm=True)
     print_scores(scores_dev, mode="dev")
     scores_test = test(args, split="test", model=model, tokenizer=tokenizer,
-                       training=True)
+                       training_or_lm=True)
     print_scores(scores_test)
 
     if scores_dev[1][0] > best_score:
@@ -139,7 +139,7 @@ def test(args, split="test", model=None, tokenizer=None, training_or_lm=False):
     map, mrr, p30 = evaluate(args.trec_eval_path,
                              predictions_file=args.predict_path, \
                              qrels_file=os.path.join(args.data_path,
-                                                     "qrels.microblog.txt"))
+                                                     args.qrels_file))
 
     torch.cuda.empty_cache()
     model.train()
@@ -180,6 +180,7 @@ if __name__ == '__main__':
                         help='')
     parser.add_argument('--output_path', default='out.tmp', help='')
     parser.add_argument('--predict_path', default='prediction.trec', help='')
+    parser.add_argument('--qrels_file', default='qrels.microblog.txt', help='')
     parser.add_argument('--warmup_proportion', default=0.1, type=float,
                         help='Proportion of training to perform linear learning rate warmup. E.g., 0.1 = 10%% of training.')
     args = parser.parse_args()

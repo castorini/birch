@@ -1,6 +1,6 @@
 import torch
 from pytorch_pretrained_bert import BertTokenizer, \
-    BertForSequenceClassification, BertForNextSentencePrediction
+    BertForSequenceClassification, BertForNextSentencePrediction, BertForMaskedLM
 from pytorch_pretrained_bert.optimization import BertAdam
 
 
@@ -19,6 +19,8 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification",
         # Load pre-trained model tokenizer (vocabulary)
     elif model_type == "BertForNextSentencePrediction":
         model = BertForNextSentencePrediction.from_pretrained(base_model)
+    elif model_type == "BertForMaskedLM":
+        model = BertForMaskedLM.from_pretrained(base_model)
     else:
         print("[Error]: unsupported model type")
         return None, None

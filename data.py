@@ -5,6 +5,7 @@ class DataGenerator(object):
     def __init__(self, data_path, data_name, split):
         super(DataGenerator, self).__init__()
         self.tweet = 1 if data_name == 'mb' else 0
+        self.tfidf = 1 if 'tfidf' in data_name else 0
         if self.tweet:
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
@@ -18,6 +19,11 @@ class DataGenerator(object):
         if self.tweet:
             for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
                 return sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), ID.replace("\n", ""), url.replace("\n", "")
+            return None, None, None, None, None
+        elif self.tfidf:
+            for l in self.f:
+                label, a, b, ID = l.rstrip().split('\t');
+                return label, a, b, ID, 'url'
             return None, None, None, None, None
         else:
             for l in self.f:
@@ -66,13 +72,20 @@ def load_data(data_path, data_name, batch_size, tokenizer, split="train",
 
             combine_index = a_index + b_index
             segments_ids = [0] * len(a_index) + [1] * len(b_index)
+            if len(combine_index) >= 512:
+                combine_index = combine_index[:512]
+            if len(segments_ids) >= 512:
+                segments_ids = segments_ids[:512]
+
             test_batch.append(torch.tensor(combine_index))
             testqid_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
             label_batch.append(int(label))
             qid, _, docid, _, _, _ = ID.split()
+
             qid = int(qid)
             docid = int(docid)
+
             qid_batch.append(qid)
             docid_batch.append(docid)
             if len(test_batch) >= batch_size:
@@ -147,6 +160,7 @@ def load_trec_data(data_path, data_name, batch_size, tokenizer, split="train",
             segments_ids = [0] * len(a_index) + [1] * len(b_index)
             combine_index = combine_index[:512]
             segments_ids = segments_ids[:512]
+
             test_batch.append(torch.tensor(combine_index))
             testqid_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))

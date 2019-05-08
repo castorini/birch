@@ -31,7 +31,7 @@ with open('result/result.csv', mode='r') as scores_file, \
             if len(rel_sents) > 0:
                 rel_sentid = rel_sents[0][0]
                 robust04_entry = robust04_dict[rel_sentid]
-                out_sents.write("{}\t{}\t{}\t{}\tQ0\t{}\t0\t0.0\tlucene4lm\turl\n".format(
+                out_sents.write("{}\t{}\t{}\t{} Q0 {} 0.0 lucene4lm url\n".format(
                                 int(robust04_entry[0]),
                                 robust04_entry[1],
                                 robust04_entry[2],
@@ -42,7 +42,7 @@ with open('result/result.csv', mode='r') as scores_file, \
             for i in range(0, min(len(non_rel_sents), 5)):
                 non_rel_sentid = non_rel_sents[i][0]
                 robust04_entry = robust04_dict[non_rel_sentid]
-                out_sents.write("{}\t{}\t{}\t{}\tQ0\t{}\t0\t0.0\tlucene4lm\turl\n".format(
+                out_sents.write("{}\t{}\t{}\t{} Q0 {} 0.0 lucene4lm url\n".format(
                                 int(robust04_entry[0]),
                                 robust04_entry[1],
                                 robust04_entry[2],
