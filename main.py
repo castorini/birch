@@ -161,7 +161,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_train_epochs', default=3, type=int, help='')
     parser.add_argument('--data_path', default='data', help='')
     parser.add_argument('--data_name', default='robust04',
-                        help='[mb, robust04]')
+                        help='[mb, robust04, tfidf_sents]')
     parser.add_argument('--pytorch_dump_path', default='saved.model', help='')
     parser.add_argument('--load_trained', action='store_true', default=False,
                         help='')
