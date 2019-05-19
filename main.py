@@ -91,8 +91,15 @@ def eval_select(model, tokenizer, model_path, best_score, epoch, arch):
 
 def test(args, split="test", model=None, tokenizer=None, training_or_lm=False):
     if model is None:
-        epoch, arch, model, tokenizer, scores = load_checkpoint(
+        if args.load_trained:
+            epoch, arch, model, tokenizer, scores = load_checkpoint(
             args.pytorch_dump_path)
+        else:
+            # May load local file or download from huggingface
+            model, tokenizer = load_pretrained_model_tokenizer(args.model_type,
+                                                               base_model=args.local_model,
+                                                               base_tokenizer=args.local_tokenizer,
+                                                               device=args.device)
 
     if training_or_lm:
         # Load MB data
