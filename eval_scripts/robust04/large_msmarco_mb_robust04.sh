@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-### OLD
-
 # MSMARCO-MB 5 folders alpha
  python eval_bert.py --experiment large_msmarco_mb_robust04 3 0.5 0 0 0 test
  python eval_bert.py --experiment large_msmarco_mb_robust04 3 0.5 0 0 1 test
