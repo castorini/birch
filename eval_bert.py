@@ -1,9 +1,11 @@
 from collections import defaultdict
 import numpy as np
 import operator
-import sys
 import json
 import os
+
+from args import get_args
+
 
 def load_nist_qrels(qrelsF):
     rel_dict = defaultdict(list) 
@@ -19,6 +21,7 @@ def load_nist_qrels(qrelsF):
             else:
                 nonrel_dict[topic].append(doc)
     return rel_dict, nonrel_dict, all_dict
+
 
 def eval_bm25(bm25F, topK = 1000):
     doc_score_dict = defaultdict(dict)
@@ -41,53 +44,46 @@ def eval_bm25(bm25F, topK = 1000):
         for doc, score in doc_dict:
             if rank <= topK:
                 top_doc_dict[qid].append(doc)
-                # print("{} Q0 {} {} {} BERT\n".format(qid, doc, rank, score))
+                # print("{} Q0 {} {} {} BERT".format(qid, doc, rank, score))
             rank+=1
     for qid in top_doc_dict:
         assert(len(top_doc_dict[qid]) == topK)
     return top_doc_dict, doc_score_dict, sent_dict, q_dict, doc_label_dict
 
+
 def load_bert_scores(bertF, q_dict, sent_dict):
     score_dict = defaultdict(dict)
     with open(bertF) as bF:
         for line in bF:
-            q, _, d, _, score, _, _ = line.strip().split()
+            q, _, d, _, score, _ = line.strip().split()
             q = q_dict[q]
             sent = sent_dict[d]
             doc = sent.split('_')[0]
-            # print q, sent, doc, score, bm25_dict[q][doc], label_dict[q][doc]
             score = float(score)
             if doc not in score_dict[q]:
                 score_dict[q][doc] = [score]
             else:
                 score_dict[q][doc].append(score)
     return score_dict
-    
 
-def calc_q_doc_bert(score_dict, runF, test_set,
-        topics, top_doc_dict, sent_dict, q_dict,
-        bm25_dict, label_dict, topKSent, alpha, beta, gamma=0,delta=0):
+
+def calc_q_doc_bert(score_dict, runF, topics, top_doc_dict, bm25_dict, topKSent,
+                    alpha, beta, gamma=0, delta=0):
     run_file = open(runF, "w")
     for q in topics:
         doc_score_dict = {}
-        assert(len(top_doc_dict[q]) == 1000)
         for d in top_doc_dict[q]:
             scores = score_dict[q][d]
             scores.sort(reverse=True)
-
-            # print q, d, label_dict[q][d], bm25_dict[q][d], \
-                # ' '.join(map(str, scores))
             sum_score = 0
             score_list = []
             # rank = 1.0
-            weight_list = [1, beta, gamma,delta]
+            weight_list = [1, beta, gamma, delta]
 
             for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
                 score_list.append(s)
                 sum_score += s * w
-                # rank += 1
-            # doc_dict[d] = w * bm25_dict[(q,d)]
-            doc_score_dict[d] = alpha * bm25_dict[q][d]+ (1.0-alpha) * sum_score
+            doc_score_dict[d] = alpha * bm25_dict[q][d]+ (1.0 - alpha) * sum_score
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
@@ -97,19 +93,24 @@ def calc_q_doc_bert(score_dict, runF, test_set,
 
 
 def main():
-    topK = int(sys.argv[1])
-    alpha = float(sys.argv[2])
-    beta = float(sys.argv[3])
-    gamma = float(sys.argv[4])
-    delta = float(sys.argv[5])
-    test_folder_set = int(sys.argv[6])
-    mode = sys.argv[7]
+    args, other = get_args()
 
-    bert_ft = 'MB'
-    bm25_res = './robust04_rm3_5cv_sent_fields.txt'
-    para_folder = './robust04-paper2-folds.json'
-    train_topics,test_topics, all_topics = [], [], []
-    with open(para_folder) as f:
+    experiment = args.experiment
+    data_path = args.data_path
+    folds_path = args.folds_path
+    qrels_file = args.qrels
+    bm25_res = args.bm25_res
+
+    topK = int(other[0])
+    alpha = float(other[1])
+    beta = float(other[2])
+    gamma = float(other[3])
+    test_folder_set = int(other[4])
+    mode = other[5]
+
+    # Divide topics according to fold parameters
+    train_topics, test_topics, all_topics = [], [], []
+    with open(folds_path) as f:
         folds = json.load(f)
     for i in range(0, len(folds)):
         all_topics.extend(folds[i])
@@ -118,55 +119,35 @@ def main():
         else:
             test_topics.extend(folds[i])
 
-    assert(len(train_topics) == 200)
-    assert(len(test_topics) == 50)
-    assert(len(all_topics) == 250)
-
-    # robust04_rm3_5cv_sent_fields.txt is 5 folder cv sentences
-    # prediction 5 folder predict.MB predict.QA
-
-    # robust04_rm3_2cv_sent_fields.txt is 2 folder cv sentences
-    # prediction 2 folder predict.MB.2folder
-    rel_dict, nonrel_dict, all_dict = load_nist_qrels('./qrels.robust2004.txt')
-    top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = \
-        eval_bm25(bm25_res)
-
-    score_dict = load_bert_scores('predict.'+bert_ft, q_dict,
-       sent_dict)
+    top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(bm25_res)
+    score_dict = load_bert_scores('predict.' + experiment, q_dict, sent_dict)
 
     if mode == 'train':
         # grid search best parameters
-        for alpha in np.arange(0.7, 0.85, 0.1):
-            for beta in np.arange(0, 0.25, 0.1):
-                for gamma in np.arange(0, 0.25, 0.1):
-                    for delta in np.arange(0, 0.25, 0.1):
-                        calc_q_doc_bert(score_dict, 'run.'+bert_ft+'.cv.train',
-                            test_folder_set, train_topics, top_doc_dict, 
-                            sent_dict, q_dict, doc_bm25_dict, doc_label_dict, 
-                            topK, alpha, beta, gamma, delta)
-                        qrels = './qrels.robust2004.txt'
-                        base = 'run.'+bert_ft+'.cv.train'
-                        os.system(f'./trec_eval -M1000 -m map {qrels} {base}> eval.base')
-                        with open('eval.base', 'r') as f:
-                            for line in f:
-                                metric, qid, score = line.split('\t')
-                                map_score = float(score)
-                                print(test_folder_set,round(alpha,2), 
-                                    round(beta,2), round(gamma,2), 
-                                    round(delta,2), map_score)
+        for alpha in np.arange(0.0, 1.0, 0.1):
+            for beta in np.arange(0.0, 1.0, 0.1):
+                for gamma in np.arange(0.0, 1.0, 0.1):
+                    calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.train',
+                                    train_topics, top_doc_dict, doc_bm25_dict,
+                                    topK, alpha, beta, gamma)
+                    base = 'run.' + experiment + '.cv.train'
+                    qrels = os.path.join(data_path, 'topics-and-qrels', qrels_file)
+                    os.system('../Anserini/eval/trec_eval.9.0.4/trec_eval -M1000 -m map {} {}> eval.base'.format(qrels, base))
+                    with open('eval.base', 'r') as f:
+                        for line in f:
+                            metric, qid, score = line.split('\t')
+                            map_score = float(score)
+                            print(test_folder_set, round(alpha, 2),
+                                    round(beta, 2), round(gamma, 2), map_score)
+
     elif mode == 'test':
-        calc_q_doc_bert(score_dict, 
-            'run.'+bert_ft+'.cv.test.'+str(test_folder_set),
-            test_folder_set,
-            test_topics, top_doc_dict, sent_dict, q_dict,
-            doc_bm25_dict, doc_label_dict, topK, 
-            alpha, beta, gamma, delta)
+        calc_q_doc_bert(score_dict,
+                        'run.' + experiment + '.cv.test.' + str(test_folder_set),
+                        test_topics, top_doc_dict, doc_bm25_dict, topK, alpha,
+                        beta, gamma)
     else:
-        calc_q_doc_bert(score_dict, 'run.'+bert_ft+'.cv.all',
-            test_folder_set,  all_topics,
-            top_doc_dict, sent_dict, q_dict,
-            doc_bm25_dict, doc_label_dict, topK,
-            alpha, beta, gamma, delta)
+        calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', all_topics,
+                        top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
 
 if __name__ == "__main__":
