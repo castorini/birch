@@ -44,6 +44,7 @@ def eval_bm25(bm25F, topK = 1000):
         for doc, score in doc_dict:
             if rank <= topK:
                 top_doc_dict[qid].append(doc)
+                # print("{} Q0 {} {} {} BERT".format(qid, doc, rank, score))
             rank+=1
     for qid in top_doc_dict:
         assert(len(top_doc_dict[qid]) == topK)
@@ -77,7 +78,7 @@ def calc_q_doc_bert(score_dict, runF, topics, top_doc_dict, bm25_dict, topKSent,
             sum_score = 0
             score_list = []
             # rank = 1.0
-            weight_list = [1, beta, gamma,delta]
+            weight_list = [1, beta, gamma, delta]
 
             for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
                 score_list.append(s)

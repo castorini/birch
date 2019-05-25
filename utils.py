@@ -1,8 +1,8 @@
+import shlex
+import subprocess
 import sys
 import re
-import json
 import nltk
-from searcher import JString
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -13,7 +13,6 @@ tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 MAX_INPUT_LENGTH = 512
 
 
-# Corpus functions
 def get_query(ftopic, collection):
     qid2query = {}
     empty = False
@@ -122,43 +121,24 @@ def parse_doc_from_index(content):
     return doc.strip()
 
 
-# Retrieval functions
-def search_core(searcher, qid2docid, qid2text, output_fn, collection='core17', K=1000):
-    qidx, didx = 1, 1
-    with open(output_fn, 'w') as out:
-        for qid in qid2text:
-            text = qid2text[qid]
-            # print(qid, text)
-            hits = searcher.search(JString(text), K)
-            for i in range(len(hits)):
-                sim = hits[i].score
-                docno = hits[i].docid
-                label = 1 if qid in qid2docid and docno in qid2docid[qid] else 0
-                content = hits[i].content
-                if collection == 'core18':
-                    content_json = json.loads(content)
-                    content = ''
-                    for each in content_json['contents']:
-                        if each is not None and 'content' in each.keys():
-                            content += '{}\n'.format(each['content'])
-                clean_content = clean_html(content, collection=collection)
-                tokenized_content = tokenizer.tokenize(clean_content)
-
-                sentid = 0
-                for sent in tokenized_content:
-                    # Split sentence if it's longer than BERT's maximum input length
-                    if len(sent.strip().split()) > MAX_INPUT_LENGTH:
-                        seq_list = chunk_sent(sent, MAX_INPUT_LENGTH)
-                        for seq in seq_list:
-                            sentno = docno + '_' + str(sentid)
-                            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, sim, text, seq, qid, sentno, qidx, didx))
-                            out.flush()
-                            sentid += 1
-                            didx += 1
-                    else:
-                        sentno = docno + '_' + str(sentid)
-                        out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, sim, text, sent, qid, sentno, qidx, didx))
-                        out.flush()
-                        sentid += 1
-                        didx += 1
-            qidx += 1
+def cal_score(fn_qrels="../Anserini/src/main/resources/topics-and-qrels/qrels.robust04.txt", prediction="score.txt"):
+    cmd = "/bin/sh run_eval_new.sh {} {}".format(prediction, fn_qrels)
+    pargs = shlex.split(cmd)
+    p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    pout, perr = p.communicate()
+    print("running {}".format(cmd))
+    if sys.version_info[0] < 3:
+        lines = pout.split('\n')
+    else:
+        lines = pout.split(b'\n')
+    Map = float(lines[0].strip().split()[-1])
+    Mrr = float(lines[1].strip().split()[-1])
+    P20 = float(lines[2].strip().split()[-1])
+    P30 = float(lines[3].strip().split()[-1])
+    NDCG20 = float(lines[4].strip().split()[-1])
+    print(Map)
+    print(Mrr)
+    print(P30)
+    print(P20)
+    print(NDCG20)
+    return Map, Mrr, P30, P20, NDCG20

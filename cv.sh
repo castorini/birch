@@ -15,116 +15,40 @@
 # cat run.MB.cv.test.* > run.MB.cv
 
 #MB 2 folders
-# python eval_bert.py 2 0.63 0.1 0 test 
-# python eval_bert.py 2 0.56 0.1 1 test 
+# python eval_bert.py 2 0.63 0.1 0 test
+# python eval_bert.py 2 0.56 0.1 1 test
 # cat run.MB.cv.test.* > run.MB.foder1.cv
 
 # python3 compare_runs.py --base run.robust04.rm3 --comparison run.QA.cv --qrels
-# qrels.robust2004.txt --metric map
+# qrels.robust04.txt --metric map
 
 # python3 compare_runs.py --base run.robust04.rm3 --comparison run.MB.cv --qrels
-# qrels.robust2004.txt --metric map
+# qrels.robust04.txt --metric map
 
-###
-
-## Base-MB 5 folders alpha
+## CAR-Core17 5 folders alpha
 # python eval_bert.py 3 0.6 0 0 0 test
 # python eval_bert.py 3 0.6 0 0 1 test
-# python eval_bert.py 3 0.7 0 0 2 test
+# python eval_bert.py 3 0.5 0 0 2 test
 # python eval_bert.py 3 0.5 0 0 3 test
 # python eval_bert.py 3 0.6 0 0 4 test
-# cat run.tweet2014.cv.test.* > run.tweet2014.cv.a
-#
-## Base-MB 5 folders alpha + beta
-# python eval_bert.py 3 0.6 0.1 0 0 test
-# python eval_bert.py 3 0.6 0.1 0 1 test
-# python eval_bert.py 3 0.6 0.1 0 2 test
-# python eval_bert.py 3 0.5 0.0 0 3 test
-# python eval_bert.py 3 0.6 0.2 0 4 test
-# cat run.tweet2014.cv.test.* > run.tweet2014.cv.b
-#
-## Base-MB 5 folders alpha + beta + gamma
-# python eval_bert.py 3 0.6 0.1 0.0 0 test
-# python eval_bert.py 3 0.6 0.1 0.1 1 test
-# python eval_bert.py 3 0.6 0.1 0.1 2 test
-# python eval_bert.py 3 0.5 0.0 0.0 3 test
-# python eval_bert.py 3 0.6 0.1 0.1 4 test
-# cat run.tweet2014.cv.test.* > run.tweet2014.cv.c
+# cat run.car_core17_test.cv.test.* > run.car_core17_test.cv.a
 
-###
+## CAR-Core17 5 folders alpha + beta
+# python eval_bert.py 3 0.6 0.8 0 0 test
+# python eval_bert.py 3 0.6 0.9 0 1 test
+# python eval_bert.py 3 0.5 0.8 0 2 test
+# python eval_bert.py 3 0.5 0.8 0 3 test
+## python eval_bert.py 3 0.6 0.7 0 4 test
+# cat run.car_core17_test.cv.test.* > run.car_core17_test.cv.b
 
-## Large-MB 5 folders alpha
-# python eval_bert.py 3 0.4 0 0 0 test
-# python eval_bert.py 3 0.3 0 0 1 test
-# python eval_bert.py 3 0.4 0 0 2 test
-# python eval_bert.py 3 0.3 0 0 3 test
-# python eval_bert.py 3 0.3 0 0 4 test
-# cat run.bert-large.cv.test.* > run.bert-large.cv.a
-#
-## Large-MB 5 folders alpha + beta
-# python eval_bert.py 3 0.4 0.1 0 0 test
-# python eval_bert.py 3 0.3 0.1 0 1 test
-# python eval_bert.py 3 0.4 0.1 0 2 test
-# python eval_bert.py 3 0.3 0.1 0 3 test
-# python eval_bert.py 3 0.3 0.1 0 4 test
-# cat run.bert-large.cv.test.* > run.bert-large.cv.b
-#
-## Large-MB 5 folders alpha + beta + gamma
-# python eval_bert.py 3 0.4 0.1 0 0 test
-# python eval_bert.py 3 0.3 0.1 0 1 test
-# python eval_bert.py 3 0.4 0.1 0 2 test
-# python eval_bert.py 3 0.3 0.1 0 3 test
-# python eval_bert.py 3 0.3 0.1 0 4 test
-# cat run.bert-large.cv.test.* > run.bert-large.cv.c
+## CAR-Core17 5 folders alpha + beta + gamma
+# python eval_bert.py 3 0.6 0.8 0 0 test
+# python eval_bert.py 3 0.6 0.7 0.4 1 test
+# python eval_bert.py 3 0.6 0.7 0.4 2 test
+# python eval_bert.py 3 0.5 0.4 0.6 3 test
+# python eval_bert.py 3 0.6 0.7 0 4 test
+# cat run.car_core17_test.cv.test.* > run.car_core17_test.cv.c
 
-###
-
-## MSMARCO-MB 5 folders alpha
-# python eval_bert.py 3 0.5 0 0 0 test
-# python eval_bert.py 3 0.5 0 0 1 test
-# python eval_bert.py 3 0.5 0 0 2 test
-# python eval_bert.py 3 0.3 0 0 3 test
-# python eval_bert.py 3 0.4 0 0 4 test
-# cat run.msmarco.cv.test.* > run.msmarco.cv.a
-
-## MSMARCO-MB 5 folders alpha + beta
-# python eval_bert.py 3 0.5 0.4 0 0 test
-# python eval_bert.py 3 0.5 0.4 0 1 test
-# python eval_bert.py 3 0.5 0.4 0 2 test
-# python eval_bert.py 3 0.5 0.4 0 3 test
-# python eval_bert.py 3 0.5 0.4 0 4 test
-# cat run.msmarco.cv.test.* > run.msmarco.cv.b
-
-## MSMARCO-MB 5 folders alpha + beta + gamma
-# python eval_bert.py 3 0.5 0.2 0.3 0 test
-# python eval_bert.py 3 0.5 0.2 0.3 1 test
-# python eval_bert.py 3 0.5 0.2 0.3 2 test
-# python eval_bert.py 3 0.5 0.2 0.3 3 test
-# python eval_bert.py 3 0.5 0.3 0.2 4 test
-# cat run.msmarco.cv.test.* > run.msmarco.cv.c
-
-###
-
-## CAR-MB 5 folders alpha
-# python eval_bert.py 3 0.4 0 0 0 test
-# python eval_bert.py 3 0.4 0 0 1 test
-# python eval_bert.py 3 0.5 0 0 2 test
-# python eval_bert.py 3 0.3 0 0 3 test
-# python eval_bert.py 3 0.4 0 0 4 test
-# cat run.car.cv.test.* > run.car.cv.a
-
-## CAR-MB 5 folders alpha + beta
-# python eval_bert.py 3 0.4 0.2 0 0 test
-# python eval_bert.py 3 0.4 0.3 0 1 test
-# python eval_bert.py 3 0.5 0.3 0 2 test
-# python eval_bert.py 3 0.4 0.3 0 3 test
-# python eval_bert.py 3 0.4 0.3 0 4 test
-# cat run.car.cv.test.* > run.car.cv.b
-
-## CAR-MB 5 folders alpha + beta + gamma
-# python eval_bert.py 3 0.4 0.1 0.1 0 test
-# python eval_bert.py 3 0.4 0.2 0.1 1 test
-# python eval_bert.py 3 0.5 0.3 0 2 test
-# python eval_bert.py 3 0.4 0.3 0.1 3 test
-# python eval_bert.py 3 0.4 0.2 0.1 4 test
-# cat run.car.cv.test.* > run.car.cv.c
+ python eval_bert.py --experiment car_core17_test --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --collection core17 --qrels qrels.core17.txt --bm25_res core17_bm25_rm3_cv_sent.txt --folds_path core17-5-folds.json 3 0.6 0 0 0 all
+ python eval_bert.py --experiment car_core17_test --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --collection core17 --qrels qrels.core17.txt --bm25_res core17_bm25_rm3_cv_sent.txt --folds_path core17-5-folds.json 3 0.6 0.9 0 0 all
+ python eval_bert.py --experiment car_core17_test --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --collection core17 --qrels qrels.core17.txt --bm25_res core17_bm25_rm3_cv_sent.txt --folds_path core17-5-folds.json 3 0.6 0.7 0.4 0 all
