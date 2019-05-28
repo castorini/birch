@@ -1,4 +1,45 @@
  # BERT4retrieval
+ 
+ The commands below assume that Anserini and Birch are located in the same directory.
+ 
+## Extract Data
+
+- Core17: `python core_cv.py --collection core17 --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --output_path core17_sents.txt`
+- Core18: `python core_cv.py --collection core18 --index_path /tuna1/indexes/lucene-index.core18.pos+docvectors+rawdocs --output_path core18_sents.txt`
+
+## Evaluation
+
+- Tune hyperparameters
+
+```
+./train.sh mb 5
+```
+
+- Calculate document score
+
+Set the last argument to True if you want to use your hyperparameters.
+To use the default, set to False.
+
+```
+./test.sh mb 5 True
+```
+
+- Evaluate with trec_eval
+
+```./eval.sh mb ../Anserini/src/main/resources/topics-and-qrels/qrels.robust2004.txt```
+
+### Significance Tests
+
+```
+cd eval_scripts
+./compare_runs.sh
+```
+
+- Runs for all experiments by default
+- Modify arrays `experiments`, `collections` and `metrics` if necessary
+- Check results for each experiment under `eval_scripts/sig_tests`
+
+---
 
 ## BM25 results
 | Top K Sentences | Method | Recall | Number of Docs | MAP of Max Sent |
