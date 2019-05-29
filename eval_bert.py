@@ -120,16 +120,16 @@ def main():
             test_topics.extend(folds[i])
 
     top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(bm25_res)
-    score_dict = load_bert_scores('predict.' + experiment, q_dict, sent_dict)
+    score_dict = load_bert_scores(os.path.join('predictions', 'predict.' + experiment), q_dict, sent_dict)
 
     if mode == 'train':
         # grid search best parameters
-        for alpha in np.arange(0.0, 1.0, 0.1):
-            for beta in np.arange(0.0, 1.0, 0.1):
-                for gamma in np.arange(0.0, 1.0, 0.1):
+        for a in np.arange(0.0, alpha, 0.1):
+            for b in np.arange(0.0, beta, 0.1):
+                for g in np.arange(0.0, gamma, 0.1):
                     calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.train',
                                     train_topics, top_doc_dict, doc_bm25_dict,
-                                    topK, alpha, beta, gamma)
+                                    topK, a, b, g)
                     base = 'run.' + experiment + '.cv.train'
                     qrels = os.path.join(data_path, 'topics-and-qrels', qrels_file)
                     os.system('../Anserini/eval/trec_eval.9.0.4/trec_eval -M1000 -m map {} {}> eval.base'.format(qrels, base))
@@ -137,8 +137,8 @@ def main():
                         for line in f:
                             metric, qid, score = line.split('\t')
                             map_score = float(score)
-                            print(test_folder_set, round(alpha, 2),
-                                    round(beta, 2), round(gamma, 2), map_score)
+                            print(test_folder_set, round(a, 2),
+                                    round(b, 2), round(g, 2), map_score)
 
     elif mode == 'test':
         calc_q_doc_bert(score_dict,
