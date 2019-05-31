@@ -15,7 +15,7 @@ declare -a sents=("a" "b" "c")
 for i in "${sents[@]}"
 do
     if [ ${tune_params} == "True" ] ; then
-        for j in $(seq 0 2)  # $((num_folds - 1)))
+        for j in $(seq 0 $((num_folds - 1)))
         do
             while IFS= read -r line
             do
@@ -28,7 +28,6 @@ do
 
         done
     else
-        echo "lel"
         if [ ${num_folds} == '5' ] ; then
             ./robust04_eval_5.sh ${experiment} ../Anserini/src/main/resources ${folds_path} qrels.robust2004.txt
         else
