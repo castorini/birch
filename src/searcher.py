@@ -1,7 +1,7 @@
 import os
 import json
-from utils import parse_doc_from_index, clean_html, tokenizer, MAX_INPUT_LENGTH, chunk_sent
-from args import get_args
+from src.utils import parse_doc_from_index, clean_html, tokenizer, MAX_INPUT_LENGTH, chunk_sent
+from src.args import get_args
 
 import jnius_config
 # TODO: make path dynamic
