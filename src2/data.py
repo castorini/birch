@@ -1,5 +1,6 @@
 import os
 import torch
+import random
 
 class DataGenerator(object):
     def __init__(self, data_path, data_name, split):
@@ -72,10 +73,6 @@ def load_data(data_path, data_name, batch_size, tokenizer, split="train",
 
             combine_index = a_index + b_index
             segments_ids = [0] * len(a_index) + [1] * len(b_index)
-            if len(combine_index) >= 512:
-                combine_index = combine_index[:512]
-            if len(segments_ids) >= 512:
-                segments_ids = segments_ids[:512]
 
             test_batch.append(torch.tensor(combine_index))
             testqid_batch.append(torch.tensor(segments_ids))
@@ -112,12 +109,9 @@ def load_data(data_path, data_name, batch_size, tokenizer, split="train",
             test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docqid_batch = [], [], [], [], [], []
             yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
 
-        # if split != "train":
-        #    break
         yield None
 
     return None
-    # return data_set
 
 
 def load_trec_data(data_path, data_name, batch_size, tokenizer, split="train",

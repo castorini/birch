@@ -1,15 +1,13 @@
 import argparse
 
-from data import load_data, load_trec_data
-from eval import evaluate
-from util import *
+from src2.data import load_data, load_trec_data
+from src2.eval import evaluate
+from src2.util import *
 import os
 import random
 from tqdm import tqdm
 import numpy as np
 import torch
-
-from util import save_checkpoint, load_checkpoint, print_scores
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -41,7 +39,6 @@ def train(args):
     best_score = 0
     for epoch in range(last_epoch, args.num_train_epochs + 1):
         tr_loss = 0
-        # random.shuffle(train_dataset)
         print('epoch: {}'.format(epoch))
         for step, batch in enumerate(tqdm(train_dataset)):
             if batch is None:
@@ -139,10 +136,7 @@ def test(args, split="test", model=None, tokenizer=None, training_or_lm=False):
 
     f.close()
     predicted.close()
-    # acc, pre, rec, f1 = 0, 0, 0, 0
-    # acc = get_acc(prediction_index_list, labels)
-    # p1 = get_p1(prediction_score_list, labels, args.data_path, args.data_name, split)
-    # pre, rec, f1 = get_pre_rec_f1(prediction_index_list, labels)
+
     map, mrr, p30 = evaluate(args.trec_eval_path,
                              predictions_file=args.predict_path, \
                              qrels_file=os.path.join(args.data_path,
@@ -152,8 +146,6 @@ def test(args, split="test", model=None, tokenizer=None, training_or_lm=False):
     model.train()
 
     return [["map", "mrr", "p30"], [map, mrr, p30]]
-    # return [["acc", "precision", "recall", "f1"], [acc, pre, rec, f1]]
-    # return [["acc", "p@1", "precision", "recall", "f1"], [acc, p1, pre, rec, f1]]
 
 
 if __name__ == '__main__':
