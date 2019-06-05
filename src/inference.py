@@ -2,12 +2,11 @@ import os
 
 import torch
 
-from inference_utils import save_checkpoint, load_checkpoint, print_scores, load_pretrained_model_tokenizer
-from data import load_data, load_trec_data
-from inference_eval import evaluate
+from inference_utils import evaluate, save_checkpoint, load_checkpoint, print_scores, load_pretrained_model_tokenizer
+from data import load_data
 
 
-def test(args, predictions_path, split="test", model=None, tokenizer=None):
+def test(args, predictions_path, model=None, tokenizer=None):
     if model is None:
         if args.load_trained:
             epoch, arch, model, tokenizer, scores = load_checkpoint(
@@ -17,8 +16,8 @@ def test(args, predictions_path, split="test", model=None, tokenizer=None):
             model, tokenizer = load_pretrained_model_tokenizer(base_model=args.local_model,
                                                                base_tokenizer=args.local_tokenizer)
 
-    test_dataset = load_trec_data(args.data_path, args.collection,
-                                  args.batch_size, tokenizer, split)
+    test_dataset = load_data(args.data_path, args.collection,
+                                  args.batch_size, tokenizer)
 
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
@@ -40,19 +39,18 @@ def test(args, predictions_path, split="test", model=None, tokenizer=None):
         docids = docid_tensor.cpu().detach().numpy()
         for p, qid, docid, s in zip(predicted_index, qids, docids, scores):
             f.write("{}\t{}\n".format(lineno, p))
-            predicted.write(
-                "{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
+            predicted.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
             lineno += 1
+            predicted.flush()
         del predictions
 
     f.close()
     predicted.close()
 
-    eval_path = os.path.join(args.anserini_path, 'eval', 'trec_eval.9.0.4',
-                             'trec_eval')
+    eval_path = os.path.join(args.anserini_path, 'eval', 'trec_eval.9.0.4', 'trec_eval')
 
     map, mrr, p30 = evaluate(eval_path,
-                             predictions_file=args.predict_path, \
+                             predictions_file=args.predict_path,
                              qrels_file=os.path.join(args.data_path,
                                                      'topics-and-qrels',
                                                      args.qrels))
