@@ -14,55 +14,62 @@
 pip install virtualenv
 virtualenv -p python3.5 birch_env
 source birch_env/bin/activate
-pip3 install -r requirements.txt
+pip install pytorch-pretrained-bert==0.4.0 ???
 
 # Install Apex
 git clone https://github.com/NVIDIA/apex
 cd apex
 pip install -v --no-cache-dir .
+cd ..
 ```
 
 ## Inference
 
 ```
-# Download models
-curl -o saved.tweet_3 "https://www.googleapis.com/storage/v1/b/birch-models/o/saved.tweet_3?alt=media"
-curl -o saved.tweet_3 "https://www.googleapis.com/storage/v1/b/birch-models/o/saved.base_mb_2?alt=media"
+# Download data
+mkdir -p data/datasets
+curl -o data/datasets/robust04.csv "https://www.googleapis.com/download/storage/v1/b/birch_data/o/datasets%2Frobust04_test.csv?alt=media"
 
-python src/main.py --experiment <experiment_name> --run_inference --model_path <model_path> --load_trained --predict_path <predict_path> --output_path <output_path>
+# Download models
+mkdir models
+curl -o models/saved.mb_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.mb_3?alt=media"
+curl -o models/saved.qa_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.qa_3?alt=media"
+
+python src/main.py --experiment <experiment_name> --inference --model_path <model_path> --load_trained
 ```
+
+If you don't want to evaluate the pretrained models, download our predictions here and skip to the next step:
+
+```
+# Download predictions
+mkdir -p data/predictions
+curl -o data/predictions/predict.mb "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.mb?alt=media"
+curl -o data/predictions/predict.qa_5 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa_5?alt=media"
+curl -o data/predictions/predict.qa_2 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa_2?alt=media"
+```
+
+Note that there might be a very slight difference in the predicted scores due to non-determinism, but it is negligible in evaluation.
 
 ## Evaluation
 
 - Tune hyperparameters
 
 ```
-./train.sh mb 5
+./eval_scripts/train.sh <qa,mb> <5>
 ```
 
 - Calculate document score
 
-Set the last argument to True if you want to use your hyperparameters.
-To use the default, set to False.
+Set the last argument to True if you want to use the hyperparameters learned in the previous step.
+To use the default hyperparameters, set to False.
 
 ```
-./test.sh mb 5 True
+./eval_scripts/test.sh <qa,mb> <5> <anserini_path> <True,False>
 ```
 
 - Evaluate with trec_eval
 
-```./eval.sh mb ../Anserini/src/main/resources/topics-and-qrels/qrels.robust2004.txt```
-
-### Significance Tests
-
-```
-cd eval_scripts
-./compare_runs.sh
-```
-
-- Runs for all experiments by default
-- Modify arrays `experiments`, `collections` and `metrics` if necessary
-- Check results for each experiment under `eval_scripts/sig_tests`
+```./eval_scripts/eval.sh <qa,mb> <anserini_path> qrels.robust2004.txt```
 
 ---
 

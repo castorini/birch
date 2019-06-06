@@ -1,9 +1,7 @@
 experiment=$1
-qrels_file=$2
+anserini_path=$2
+qrels_file=$3
 
-declare -a sents=("a") # "b" "c")
-
-for i in "${sents[@]}"
-do
-    ../Anserini/eval/trec_eval.9.0.4/trec_eval -M1000 -m map -m P.20 -m P.30 -m ndcg_cut.30 "../Anserini/src/main/resources/topics-and-qrels/${qrels_file}" "runs/run.${experiment}.cv.$i"
-done
+${anserini_path}/eval/trec_eval.9.0.4/trec_eval -M1000 -m map -m P.20 "${anserini_path}/src/main/resources/topics-and-qrels/${qrels_file}" "runs/run.${experiment}.cv.a"
+${anserini_path}/eval/trec_eval.9.0.4/trec_eval -M1000 -m map -m P.20 "${anserini_path}/src/main/resources/topics-and-qrels/${qrels_file}" "runs/run.${experiment}.cv.ab"
+${anserini_path}/eval/trec_eval.9.0.4/trec_eval -M1000 -m map -m P.20 "${anserini_path}/src/main/resources/topics-and-qrels/${qrels_file}" "runs/run.${experiment}.cv.abc"
