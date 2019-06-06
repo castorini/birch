@@ -8,7 +8,7 @@
 - Core17: `python core_cv.py --collection core17 --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --output_path core17_sents.txt`
 - Core18: `python core_cv.py --collection core18 --index_path /tuna1/indexes/lucene-index.core18.pos+docvectors+rawdocs --output_path core18_sents.txt` -->
 
-## Environment
+## Environment & Data
 
 ```
 pip install virtualenv
@@ -21,11 +21,7 @@ git clone https://github.com/NVIDIA/apex
 cd apex
 pip install -v --no-cache-dir .
 cd ..
-```
 
-## Inference
-
-```
 # Download data
 mkdir -p data/datasets
 curl -o data/datasets/robust04.csv "https://www.googleapis.com/download/storage/v1/b/birch_data/o/datasets%2Frobust04_test.csv?alt=media"
@@ -34,7 +30,11 @@ curl -o data/datasets/robust04.csv "https://www.googleapis.com/download/storage/
 mkdir models
 curl -o models/saved.mb_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.mb_3?alt=media"
 curl -o models/saved.qa_2 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.qa_2?alt=media"
+```
 
+## Inference
+
+```
 python src/main.py --experiment <experiment_name> --inference --model_path <model_path> --load_trained
 ```
 
