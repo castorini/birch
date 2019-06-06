@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from inference_utils import evaluate, save_checkpoint, load_checkpoint, print_scores, load_pretrained_model_tokenizer
+from inference_utils import evaluate, load_checkpoint, print_scores, load_pretrained_model_tokenizer
 from data import load_data
 
 
@@ -54,7 +54,5 @@ def test(args, predictions_path, model=None, tokenizer=None):
                              qrels_file=os.path.join(args.data_path,
                                                      'topics-and-qrels',
                                                      args.qrels))
-
-    torch.cuda.empty_cache()
 
     return [["map", "mrr", "p30"], [map, mrr, p30]]

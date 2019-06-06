@@ -20,18 +20,8 @@ def load_pretrained_model_tokenizer(base_model=None, base_tokenizer=None):
     else:
         # Load local vocab file
         tokenizer = BertTokenizer.from_pretrained(base_tokenizer)
+    model.to('cpu')
     return model, tokenizer
-
-
-def save_checkpoint(epoch, arch, model, tokenizer, scores, filename):
-    state = {
-        'epoch': epoch,
-        'arch': arch,
-        'model': model,
-        'tokenizer': tokenizer,
-        'scores': scores
-    }
-    torch.save(state, filename)
 
 
 def load_checkpoint(filename):
