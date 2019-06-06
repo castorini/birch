@@ -21,6 +21,7 @@ def main():
     anserini_path = args.anserini_path
     predictions_path = os.path.join(args.data_path, 'predictions',
                                     'predict.' + experiment)
+    datasets_path = os.path.join(args.data_path, 'datasets')
 
     if inference:
         scores = test(args, predictions_path)
@@ -47,7 +48,7 @@ def main():
             else:
                 test_topics.extend(folds[i])
 
-        top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(os.path.join(args.data_path, args.collection + '.csv'))
+        top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(os.path.join(datasets_path, args.collection + '.csv'))
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
 
         if not os.path.isdir('runs'):
