@@ -14,7 +14,7 @@
 pip install virtualenv
 virtualenv -p python3.5 birch_env
 source birch_env/bin/activate
-pip install pytorch-pretrained-bert==0.4.0 ???
+pip install pytorch-pretrained-bert==0.4.0
 
 # Install Apex
 git clone https://github.com/NVIDIA/apex
