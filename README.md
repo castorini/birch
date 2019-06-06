@@ -1,6 +1,79 @@
- # BERT4retrieval
+ # Birch
  
- ## Result on Robust04
+ Document ranking via sentence modeling using BERT
+
+ ---
+<!--## Extract Data
+
+- Core17: `python core_cv.py --collection core17 --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --output_path core17_sents.txt`
+- Core18: `python core_cv.py --collection core18 --index_path /tuna1/indexes/lucene-index.core18.pos+docvectors+rawdocs --output_path core18_sents.txt` -->
+
+## Environment
+
+```
+pip install virtualenv
+virtualenv -p python3.5 birch_env
+source birch_env/bin/activate
+pip install pytorch-pretrained-bert==0.4.0 ???
+
+# Install Apex
+git clone https://github.com/NVIDIA/apex
+cd apex
+pip install -v --no-cache-dir .
+cd ..
+```
+
+## Inference
+
+```
+# Download data
+mkdir -p data/datasets
+curl -o data/datasets/robust04.csv "https://www.googleapis.com/download/storage/v1/b/birch_data/o/datasets%2Frobust04_test.csv?alt=media"
+
+# Download models
+mkdir models
+curl -o models/saved.mb_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.mb_3?alt=media"
+curl -o models/saved.qa_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.qa_3?alt=media"
+
+python src/main.py --experiment <experiment_name> --inference --model_path <model_path> --load_trained
+```
+
+If you don't want to evaluate the pretrained models, download our predictions here and skip to the next step:
+
+```
+# Download predictions
+mkdir -p data/predictions
+curl -o data/predictions/predict.mb "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.mb?alt=media"
+curl -o data/predictions/predict.qa_5 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa_5?alt=media"
+curl -o data/predictions/predict.qa_2 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa_2?alt=media"
+```
+
+Note that there might be a very slight difference in the predicted scores due to non-determinism, but it is negligible in evaluation.
+
+## Evaluation
+
+- Tune hyperparameters
+
+```
+./eval_scripts/train.sh <qa,mb> <5>
+```
+
+- Calculate document score
+
+Set the last argument to True if you want to use the hyperparameters learned in the previous step.
+To use the default hyperparameters, set to False.
+
+```
+./eval_scripts/test.sh <qa,mb> <5> <anserini_path> <True,False>
+```
+
+- Evaluate with trec_eval
+
+```./eval_scripts/eval.sh <qa,mb> <anserini_path> qrels.robust2004.txt```
+
+---
+
+## Result on Robust04
  
   - "Paper 1" based on two-fold CV:
  
@@ -31,47 +104,6 @@
  See this [paper](https://dl.acm.org/citation.cfm?id=3308781) for exact fold settings.
  
  ---
- 
-The commands below assume that Anserini and Birch are located in the same directory.
- 
-<!--## Extract Data
-
-- Core17: `python core_cv.py --collection core17 --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --output_path core17_sents.txt`
-- Core18: `python core_cv.py --collection core18 --index_path /tuna1/indexes/lucene-index.core18.pos+docvectors+rawdocs --output_path core18_sents.txt` -->
-
-## Evaluation
-
-- Tune hyperparameters
-
-```
-./train.sh mb 5
-```
-
-- Calculate document score
-
-Set the last argument to True if you want to use your hyperparameters.
-To use the default, set to False.
-
-```
-./test.sh mb 5 True
-```
-
-- Evaluate with trec_eval
-
-```./eval.sh mb ../Anserini/src/main/resources/topics-and-qrels/qrels.robust2004.txt```
-
-### Significance Tests
-
-```
-cd eval_scripts
-./compare_runs.sh
-```
-
-- Runs for all experiments by default
-- Modify arrays `experiments`, `collections` and `metrics` if necessary
-- Check results for each experiment under `eval_scripts/sig_tests`
-
----
 
 **How do I cite this work?**
 
