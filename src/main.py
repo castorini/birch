@@ -1,5 +1,6 @@
 import json
 import os
+import random
 
 import numpy as np
 
@@ -8,14 +9,17 @@ from inference import test
 from inference_utils import print_scores
 from args import get_args
 
+RANDOM_SEED = 12345
+random.seed(RANDOM_SEED)
+np.random.seed(RANDOM_SEED)
 
 def main():
     args, other = get_args()
 
     experiment = args.experiment
-    inference = args.run_inference
+    inference = args.inference
     anserini_path = args.anserini_path
-    predictions_path = os.path.join('data', 'predictions',
+    predictions_path = os.path.join(args.data_path, 'predictions',
                                     'predict.' + experiment)
 
     if inference:
@@ -24,7 +28,6 @@ def main():
     else:
         folds_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
         qrels_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', args.qrels_file)
-        bm25_path = os.path.join('data', args.bm25_file)
 
         topK = int(other[0])
         alpha = float(other[1])
@@ -44,14 +47,14 @@ def main():
             else:
                 test_topics.extend(folds[i])
 
-        top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(bm25_path)
+        top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(os.path.join(args.data_path, args.collection + '.csv'))
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
 
         if not os.path.isdir('runs'):
             os.mkdir('runs')
 
         if mode == 'train':
-            # grid search best parameters
+            # Grid search for best parameters
             for a in np.arange(0.0, alpha, 0.1):
                 for b in np.arange(0.0, beta, 0.1):
                     for g in np.arange(0.0, gamma, 0.1):

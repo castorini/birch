@@ -1,5 +1,3 @@
-import shlex
-import subprocess
 import sys
 import re
 import nltk
@@ -119,26 +117,3 @@ def parse_doc_from_index(content):
                 continue
             doc += l + ' '
     return doc.strip()
-
-
-def cal_score(fn_qrels="../Anserini/src/main/resources/topics-and-qrels/qrels.robust04.txt", prediction="score.txt"):
-    cmd = "/bin/sh run_eval_new.sh {} {}".format(prediction, fn_qrels)
-    pargs = shlex.split(cmd)
-    p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    pout, perr = p.communicate()
-    print("running {}".format(cmd))
-    if sys.version_info[0] < 3:
-        lines = pout.split('\n')
-    else:
-        lines = pout.split(b'\n')
-    Map = float(lines[0].strip().split()[-1])
-    Mrr = float(lines[1].strip().split()[-1])
-    P20 = float(lines[2].strip().split()[-1])
-    P30 = float(lines[3].strip().split()[-1])
-    NDCG20 = float(lines[4].strip().split()[-1])
-    print(Map)
-    print(Mrr)
-    print(P30)
-    print(P20)
-    print(NDCG20)
-    return Map, Mrr, P30, P20, NDCG20

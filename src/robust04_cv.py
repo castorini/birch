@@ -8,15 +8,14 @@ from args import get_args
 if __name__ == '__main__':
     args, _ = get_args()
     collection = args.collection
-    data_path = args.data_path
+    anserini_path = args.anserini_path
     index_path = args.index_path
     output_fn = args.output_path
-    prediction_fn = args.prediction_path  # 'predict_robust04_rm3_cv.txt'
     folds_path = args.folds_path
     cv_fold = args.cv_fold
 
-    fqrel = os.path.join(data_path, 'topics-and-qrels', 'qrels.' + collection + '.txt')
-    ftopic = os.path.join(data_path, 'topics-and-qrels', 'topics.' + collection + '.301-450.601-700.txt')
+    fqrel = os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', 'qrels.' + collection + '.txt')
+    ftopic = os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', 'topics.' + collection + '.301-450.601-700.txt')
 
     qid2docid = get_relevant_docids(fqrel)
     qid2text = get_query(ftopic, collection='robust04')
@@ -49,4 +48,3 @@ if __name__ == '__main__':
                                              'robust04', 1000, topics)
 
         folder_idx += 1
-        # cal_score(prediction=prediction_fn)

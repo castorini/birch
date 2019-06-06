@@ -12,19 +12,18 @@ def get_args():
                         help='Path to Lucene index')
     parser.add_argument('--collection', default='robust04', help='[robust04, core17, core18]')
     parser.add_argument('--qrels_file', default='qrels.robust2004.txt')
-    parser.add_argument('--bm25_file', default='robust04_rm3_5cv_sent_fields.txt')
     parser.add_argument('--folds_file',
                         default='robust04-paper2-folds.json',
                         help='Path to Robust04 folds')
     parser.add_argument('--output_path',
-                        default='robust04_bm25_rm3_cv_folder_1.txt',
+                        default='log/robust04_bm25_rm3_cv_folder_1.txt',
                         help='Path to write outputs')
     parser.add_argument('--cv_fold', default=5)
 
-    parser.add_argument('--run_inference', action='store_true', default=False,
+    parser.add_argument('--inference', action='store_true', default=False,
                         help='Evaluate model if True, use prediction files otherwise')
     parser.add_argument('--model_path', default='models/saved.tmp', help='Path to pretrained model')
-    parser.add_argument('--batch_size', default=4, type=int,
+    parser.add_argument('--batch_size', default=8, type=int,
                         help='[1, 8, 16, 32]')
     parser.add_argument('--local_model', default=None,
                         help='[None, path to local model file]')
