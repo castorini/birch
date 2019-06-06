@@ -33,7 +33,7 @@ curl -o data/datasets/robust04.csv "https://www.googleapis.com/download/storage/
 # Download models
 mkdir models
 curl -o models/saved.mb_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.mb_3?alt=media"
-curl -o models/saved.qa_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.qa_3?alt=media"
+curl -o models/saved.qa_2 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.qa_2?alt=media"
 
 python src/main.py --experiment <experiment_name> --inference --model_path <model_path> --load_trained
 ```
@@ -44,8 +44,7 @@ If you don't want to evaluate the pretrained models, download our predictions he
 # Download predictions
 mkdir -p data/predictions
 curl -o data/predictions/predict.mb "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.mb?alt=media"
-curl -o data/predictions/predict.qa_5 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa_5?alt=media"
-curl -o data/predictions/predict.qa_2 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa_2?alt=media"
+curl -o data/predictions/predict.qa "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa?alt=media"
 ```
 
 Note that there might be a very slight difference in the predicted scores due to non-determinism, but it is negligible in evaluation.
