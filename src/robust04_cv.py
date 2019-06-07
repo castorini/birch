@@ -1,6 +1,3 @@
-import sys
-reload(sys)
-
 from utils import *
 from searcher import *
 from args import get_args
@@ -11,7 +8,7 @@ if __name__ == '__main__':
     anserini_path = args.anserini_path
     index_path = args.index_path
     output_fn = args.output_path
-    folds_path = args.folds_path
+    folds_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
     cv_fold = args.cv_fold
 
     fqrel = os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', 'qrels.' + collection + '.txt')
@@ -20,18 +17,17 @@ if __name__ == '__main__':
     qid2docid = get_relevant_docids(fqrel)
     qid2text = get_query(ftopic, collection='robust04')
 
+    with open(os.path.join(folds_path)) as f:
+        folds = json.load(f)
+
     # TODO: dynamic params
-    if cv_fold == 5:
-        with open(os.path.join(folds_path, 'robust04-paper2-folds.json')) as f:
-            folds = json.load(f)
+    if cv_fold == '5':
         params = ["0.9 0.5 47 9 0.30",
                   "0.9 0.5 47 9 0.30",
                   "0.9 0.5 47 9 0.30",
                   "0.9 0.5 47 9 0.30",
                   "0.9 0.5 26 8 0.30"]
     else:
-        with open(os.path.join(folds_path, 'robust04-paper1-folds.json')) as f:
-            folds = json.load(f)
         params = ["0.9 0.5 50 17 0.20",
                   "0.9 0.5 26 8 0.30"]
 

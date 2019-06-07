@@ -1,9 +1,9 @@
 import sys
 import re
 import nltk
+from importlib import reload
 
 reload(sys)
-sys.setdefaultencoding('utf-8')
 
 nltk.download('punkt')
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
@@ -17,7 +17,7 @@ def get_query(ftopic, collection):
     qid = -1
     with open(ftopic) as f:
         for line in f:
-            if empty is True and qid >= 0:
+            if empty is True and int(qid) >= 0:
                 qid2query[qid] = line.replace('\n', '').strip()
                 empty = False
             # Get topic number
@@ -31,15 +31,12 @@ def get_query(ftopic, collection):
             tag = 'title'
             ind = line.find('<{}>'.format(tag))
             if ind >= 0:
-                if 'core' in collection:
-                    # Remove leading tag
-                    query = line[ind + len(tag) + 3:-1].strip()
-                else:
-                    query = line[ind + len(tag):-1].strip()
+                query = line[ind + len(tag) + 3:-1].strip()
+
                 if len(query) == 0:
                     empty = True
                 else:
-                    qid2query[qid] = query
+                    qid2query[qid] = query.lower()
 
     return qid2query
 
@@ -84,7 +81,7 @@ def clean_html(html, collection):
     :type html: str
     :rtype: str
     """
-    html = unicode(html, errors='ignore')
+    html = str(html)
     # First we remove inline JavaScript/CSS:
     cleaned = re.sub(r"(?is)<(script|style).*?>.*?(</\1>)", "", html.strip())
     # Then we remove html comments. This has to be done before removing regular

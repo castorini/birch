@@ -3,22 +3,6 @@ import operator
 import os
 
 
-def load_nist_qrels(qrels_file):
-    rel_dict = defaultdict(list) 
-    all_dict = defaultdict(list)
-    nonrel_dict = defaultdict(list)
-
-    with open(qrels_file) as pF:
-        for line in pF:
-            topic, _, doc, label = line.split()
-            all_dict[topic].append(doc)
-            if int(label) > 0:
-                rel_dict[topic].append(doc)
-            else:
-                nonrel_dict[topic].append(doc)
-    return rel_dict, nonrel_dict, all_dict
-
-
 def eval_bm25(collection_file, topK=1000):
     doc_score_dict = defaultdict(dict)
     doc_label_dict = defaultdict(dict)
@@ -63,7 +47,7 @@ def load_bert_scores(pred_file, query_dict, sent_dict):
 
 
 def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
-                    topKSent, alpha, beta, gamma=0, delta=0):
+                    topKSent, alpha, beta, gamma):
     run_file = open(os.path.join('runs', run_file), "w")
     for q in topics:
         doc_score_dict = {}
@@ -72,11 +56,11 @@ def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
             scores.sort(reverse=True)
             sum_score = 0
             score_list = []
-            weight_list = [1, beta, gamma, delta]
+            weight_list = [1, beta, gamma]
             for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
                 score_list.append(s)
                 sum_score += s * w
-            doc_score_dict[d] = alpha * bm25_dict[q][d]+ (1.0 - alpha) * sum_score
+            doc_score_dict[d] = alpha * bm25_dict[q][d] + (1.0 - alpha) * sum_score
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
