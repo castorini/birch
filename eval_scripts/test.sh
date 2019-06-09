@@ -7,12 +7,16 @@ tune_params=$4
 
 if [ ${num_folds} == '5' ] ; then
     folds_file="robust04-paper2-folds.json"
+    collection="robust04_5cv"
 else
     folds_file="robust04-paper1-folds.json"
+    collection="robust04_2cv"
 fi
 
 if [ ${tune_params} == "True" ] ; then
     declare -a sents=("a" "ab" "abc")
+
+    ./eval_scripts/train.sh ${experiment} ${num_folds} ${anserini_path}
 
     for i in "${sents[@]}"
         do
@@ -25,15 +29,10 @@ if [ ${tune_params} == "True" ] ; then
                 gamma=$(echo ${line#?} | cut -d" " -f3)
             done < "log/${experiment}/${j}${i}_best.txt"
 
-            python src/main.py --experiment ${experiment} --folds_file ${folds_file} 3 ${alpha} ${beta} ${gamma} ${j} test
+            python src/main.py --experiment ${experiment} --collection ${collection} --anserini_path ${anserini_path} --folds_file ${folds_file} 3 ${alpha} ${beta} ${gamma} ${j} test
         done
         cat runs/run.${experiment}.cv.test.* > runs/run.${experiment}.cv.${i}
     done
 else
-    if [ ${num_folds} == '5' ] ; then
-        ./eval_scripts/${experiment}_eval_5.sh ${experiment} ${anserini_path} ${folds_file}
-    else
-        # TODO
-        ./eval_scripts/${experiment}_eval_2.sh ${experiment} ${anserini_path} ${folds_file}
-    fi
+    ./eval_scripts/${experiment}_eval.sh ${experiment} ${collection} ${anserini_path} ${folds_file}
 fi

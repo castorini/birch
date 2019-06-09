@@ -1,6 +1,6 @@
 import os
 import json
-from src.utils import parse_doc_from_index, clean_html, tokenizer, MAX_INPUT_LENGTH, chunk_sent
+from utils import parse_doc_from_index, clean_html, tokenizer, MAX_INPUT_LENGTH, chunk_sent
 
 import jnius_config
 # TODO: make path dynamic
@@ -34,7 +34,6 @@ def search_document(searcher, qid2docid, qid2text, output_fn, collection='robust
             # Robust04 provides CV topics
             topics = qid2text
         for qid in topics:
-            print(qid + ':')
             text = qid2text[qid]
             hits = searcher.search(JString(text), K)
             for i in range(len(hits)):
@@ -56,17 +55,16 @@ def search_document(searcher, qid2docid, qid2text, output_fn, collection='robust
                 for sent in tokenized_content:
                     # Split sentence if it's longer than BERT's maximum input length
                     if len(sent.strip().split()) > MAX_INPUT_LENGTH:
-                        # print('a')
                         seq_list = chunk_sent(sent, MAX_INPUT_LENGTH)
                         for seq in seq_list:
                             sentno = docno + '_' + str(sentid)
-                            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, sim, text, seq, qid, sentno, qidx, didx))
+                            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, seq, qid, sentno, qidx, didx))
                             out.flush()
                             sentid += 1
                             didx += 1
                     else:
                         sentno = docno + '_' + str(sentid)
-                        out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, sim, text, sent, qid, sentno, qidx, didx))
+                        out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, sent, qid, sentno, qidx, didx))
                         out.flush()
                         sentid += 1
                         didx += 1
