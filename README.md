@@ -1,74 +1,60 @@
  # Birch
  
+[![Docker Build Status](https://img.shields.io/docker/cloud/build/osirrc2019/birch.svg)](https://hub.docker.com/r/osirrc2019/birch)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3241945.svg)](https://doi.org/10.5281/zenodo.3241945)
+ 
  Document ranking via sentence modeling using BERT
-
- ---
-<!--## Extract Data
-
-- Core17: `python core_cv.py --collection core17 --index_path /tuna1/indexes/lucene-index.core17.pos+docvectors+rawdocs --output_path core17_sents.txt`
-- Core18: `python core_cv.py --collection core18 --index_path /tuna1/indexes/lucene-index.core18.pos+docvectors+rawdocs --output_path core18_sents.txt` -->
 
 ## Environment & Data
 
 ```
+# Set up environment
 pip install virtualenv
 virtualenv -p python3.5 birch_env
 source birch_env/bin/activate
-pip install pytorch-pretrained-bert==0.4.0
 
-# Install Apex
+# Install dependencies
+pip install Cython  # jnius dependency
+pip install -r requirements.txt
+
 git clone https://github.com/NVIDIA/apex
-cd apex
-pip install -v --no-cache-dir .
-cd ..
+cd apex ; pip install -v --no-cache-dir . ; cd ..
 
-# Download data
-mkdir -p data/datasets
-curl -o data/datasets/robust04.csv "https://www.googleapis.com/download/storage/v1/b/birch_data/o/datasets%2Frobust04_test.csv?alt=media"
+# Set up Anserini
+git clone https://github.com/castorini/anserini.git
+cd anserini
+mvn clean package appassembler:assemble
+tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make ; cd ../../..
 
-# Download models
-mkdir models
-curl -o models/saved.mb_3 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.mb_3?alt=media"
-curl -o models/saved.qa_2 "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_models%2Fsaved.qa_2?alt=media"
+# Download data and models
+wget https://zenodo.org/record/3241945/files/birch_data.tar.gz
+tar -xzvf birch_data.tar.gz
 ```
 
 ## Inference
 
 ```
-python src/main.py --experiment <experiment_name> --inference --model_path <model_path> --load_trained
+python src/main.py --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --collection <robust04_2cv.csv, robust04_5cv.csv> --inference --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained
 ```
 
-If you don't want to evaluate the pretrained models, download our predictions here and skip to the next step:
-
-```
-# Download predictions
-mkdir -p data/predictions
-curl -o data/predictions/predict.mb "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.mb?alt=media"
-curl -o data/predictions/predict.qa "https://www.googleapis.com/download/storage/v1/b/birch_data/o/birch_predictions%2Fpredict.qa?alt=media"
-```
-
-Note that there might be a very slight difference in the predicted scores due to non-determinism, but it is negligible in evaluation.
+Note that this step takes a long time. 
+If you don't want to evaluate the pretrained models, you may skip to the next step and evaluate with our predictions under `data/predictions`.
 
 ## Evaluation
 
-- Tune hyperparameters
+- Compute document score
 
-```
-./eval_scripts/train.sh <qa,mb> <5>
-```
-
-- Calculate document score
-
-Set the last argument to True if you want to use the hyperparameters learned in the previous step.
+Set the last argument to True if you want to tune the hyperparameters first.
 To use the default hyperparameters, set to False.
 
 ```
-./eval_scripts/test.sh <qa,mb> <5> <anserini_path> <True,False>
+./eval_scripts/test.sh <qa_2cv, mb_2cv, qa_5cv, mb_5cv> <2, 5> <path/to/anserini> <True, False>
 ```
 
 - Evaluate with trec_eval
 
-```./eval_scripts/eval.sh <qa,mb> <anserini_path> qrels.robust2004.txt```
+```./eval_scripts/eval.sh <qa_2cv, mb_2cv, qa_5cv, mb_5cv> <path/to/anserini> qrels.robust2004.txt```
+
 
 ---
 
@@ -100,7 +86,7 @@ To use the default hyperparameters, set to False.
 |     2S: BERT(MB)    | **0.3278** | 0.4267 |         
 |     3S: BERT(MB)    | **0.3278** | **0.4287** |         
  
- See this [paper](https://dl.acm.org/citation.cfm?id=3308781) for exact fold settings.
+ See this [paper](https://dl.acm.org/citation.cfm?id=3308781) for the exact fold settings.
  
  ---
 
