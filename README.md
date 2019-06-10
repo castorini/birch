@@ -97,6 +97,10 @@ To use the default hyperparameters, set to False.
  
  See this [paper](https://dl.acm.org/citation.cfm?id=3308781) for the exact fold settings.
  
+### Replication Log
+
++ Results replicated by [@emmileaf](https://github.com/emmileaf) on 2019-06-10 (commit [`cc42b60`](https://github.com/castorini/birch/commit/cc42b60093090969c1d9b24cddd1257c1cad66df))
+ 
  ---
 
 **How do I cite this work?**
