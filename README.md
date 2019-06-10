@@ -41,6 +41,14 @@ If you don't want to evaluate the pretrained models, you may skip to the next st
 
 ## Evaluation
 
+### BM25+RM3:
+
+```
+./eval_scripts/baseline.sh <path/to/anserini> <path/to/index> <2, 5>
+```
+
+### Sentence Evidence:
+
 - Compute document score
 
 Set the last argument to True if you want to tune the hyperparameters first.
@@ -52,7 +60,9 @@ To use the default hyperparameters, set to False.
 
 - Evaluate with trec_eval
 
-```./eval_scripts/eval.sh <qa_2cv, mb_2cv, qa_5cv, mb_5cv> <path/to/anserini> qrels.robust2004.txt```
+```
+./eval_scripts/eval.sh <bm25+rm3_2cv, qa_2cv, mb_2cv, bm25+rm3_5cv, qa_5cv, mb_5cv> <path/to/anserini> qrels.robust2004.txt
+```
 
 
 ---
