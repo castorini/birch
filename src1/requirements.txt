@@ -1,2 +1,3 @@
 pytorch-pretrained-bert
 tqdm
+scipy
