@@ -33,7 +33,7 @@ tar -xzvf birch_data.tar.gz
 ## Inference
 
 ```
-python src/main.py --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --collection <robust04_2cv.csv, robust04_5cv.csv> --inference --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained
+python src/main.py --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --data_path data --collection <robust04_2cv, robust04_5cv> --inference --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained --batch_size <batch_size>
 ```
 
 Note that this step takes a long time. 

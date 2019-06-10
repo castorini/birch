@@ -23,8 +23,7 @@ def get_args():
     parser.add_argument('--inference', action='store_true', default=False,
                         help='Evaluate model if True, use prediction files otherwise')
     parser.add_argument('--model_path', default='models/saved.tmp', help='Path to pretrained model')
-    parser.add_argument('--batch_size', default=8, type=int,
-                        help='[1, 8, 16, 32]')
+    parser.add_argument('--batch_size', default=64, type=int)
     parser.add_argument('--local_model', default=None,
                         help='[None, path to local model file]')
     parser.add_argument('--local_tokenizer', default=None,

@@ -24,7 +24,7 @@ def main():
     datasets_path = os.path.join(args.data_path, 'datasets')
 
     if inference:
-        scores = test(args, predictions_path)
+        scores = test(args, datasets_path, predictions_path)
         print_scores(scores)
     else:
         folds_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
