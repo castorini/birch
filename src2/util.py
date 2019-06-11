@@ -1,27 +1,26 @@
 import torch
-
-from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM, BertForSequenceClassification, BertForNextSentencePrediction, BertForTokenClassification
+from pytorch_pretrained_bert import BertTokenizer, \
+    BertForSequenceClassification, BertForNextSentencePrediction, BertForMaskedLM
 from pytorch_pretrained_bert.optimization import BertAdam
-from model import BertMSE
 
-def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", base_model=None, base_tokenizer=None, device="cuda", chinese=False, num_labels=2):
+
+def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification",
+                                    base_model=None, base_tokenizer=None,
+                                    device="cuda", chinese=False):
     # Load pre-trained model (weights)
     if base_model is None:
+        # Download from huggingface
         if chinese:
             base_model = "bert-base-chinese"
         else:
             base_model = "bert-base-uncased"
     if model_type == "BertForSequenceClassification":
-        model = BertForSequenceClassification.from_pretrained(base_model,
-                                                              num_labels=num_labels)
+        model = BertForSequenceClassification.from_pretrained(base_model)
         # Load pre-trained model tokenizer (vocabulary)
     elif model_type == "BertForNextSentencePrediction":
         model = BertForNextSentencePrediction.from_pretrained(base_model)
-    elif model_type == "BertForTokenClassification":
-        model = BertForTokenClassification.from_pretrained(base_model,
-                                                           num_labels=num_labels)
-    elif model_type == "BertMSE":
-        model = BertMSE()
+    elif model_type == "BertForMaskedLM":
+        model = BertForMaskedLM.from_pretrained(base_model)
     else:
         print("[Error]: unsupported model type")
         return None, None
@@ -30,7 +29,7 @@ def load_pretrained_model_tokenizer(model_type="BertForSequenceClassification", 
         # Download from huggingface
         tokenizer = BertTokenizer.from_pretrained(base_model)
     else:
-        # Load local file
+        # Load local vocab file
         tokenizer = BertTokenizer.from_pretrained(base_tokenizer)
     model.to(device)
     return model, tokenizer
@@ -56,22 +55,13 @@ def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs,
     return optimizer
 
 
-def print_scores(scores, mode="test"):
-    print("")
-    print("[{}] ".format(mode), end="")
-    for sn, score in zip(scores[0], scores[1]):
-        print("{}: {}".format(sn, score), end=" ")
-    print("")
-
-
-def save_checkpoint(epoch, arch, model, tokenizer, scores, filename, label_map):
+def save_checkpoint(epoch, arch, model, tokenizer, scores, filename):
     state = {
         'epoch': epoch,
         'arch': arch,
         'model': model,
         'tokenizer': tokenizer,
-        'scores': scores,
-        'label_map': label_map
+        'scores': scores
     }
     torch.save(state, filename)
 
@@ -80,4 +70,12 @@ def load_checkpoint(filename):
     print("Load PyTorch model from {}".format(filename))
     state = torch.load(filename)
     return state['epoch'], state['arch'], state['model'], state['tokenizer'], \
-           state['scores'], state['label_map']
+           state['scores']
+
+
+def print_scores(scores, mode="test"):
+    print("")
+    print("[{}] ".format(mode), end="")
+    for sn, score in zip(scores[0], scores[1]):
+        print("{}: {}".format(sn, score), end=" ")
+    print("")

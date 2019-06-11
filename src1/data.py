@@ -3,19 +3,14 @@ import numpy as np
 
 import torch
 
-MAX_QUERY_LEN = 10
-MAX_SENT_LEN = 2115
 
 class DataGenerator(object):
     def __init__(self, data_path, data_name, batch_size, tokenizer, split, device="cuda", data_format="trec",
-                 add_url=False, label_map=None, padding=None):
+                 add_url=False, label_map=None):
         super(DataGenerator, self).__init__()
         self.data = []
         self.data_format = data_format
         self.label_map = {} if label_map is None else label_map
-        self.max_a_len = 0
-        self.max_b_len = 0
-        self.padding = padding
         if data_format == "trec":
             self.fa = open(os.path.join(data_path, "{}/{}/a.toks".format(data_name, split)))
             self.fb = open(os.path.join(data_path, "{}/{}/b.toks".format(data_name, split)))
@@ -28,15 +23,10 @@ class DataGenerator(object):
                 for a, b, sim, ID, url in zip(self.fa, self.fb, self.fsim, self.fid, self.furl):
                     self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
                                       ID.replace("\n", ""), url.replace("\n", "")])
-                    self.max_a_len = max(self.max_a_len, len(a.split(' ')))
-                    self.max_b_len = max(self.max_b_len, len(b.split(' ')))
-                    self.lengths.append(len(b.replace("\n", "").split()))
             else:
                 for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
                     self.data.append([sim.replace("\n", ""), a.replace("\n", ""), b.replace("\n", ""), \
                                       ID.replace("\n", "")])
-                    self.max_a_len = max(self.max_a_len, len(a.split(' ')))
-                    self.max_b_len = max(self.max_b_len, len(b.split(' ')))
                     self.lengths.append(len(b.replace("\n", "").split()))
             print("{} {}".format(data_name, sum(self.lengths)/len(self.lengths)))
         elif data_format == "ontonote":
@@ -123,10 +113,6 @@ class DataGenerator(object):
                     print("qid: {}".format(qid))
                     print("docid: {}".format(docid))
                 self.data.append([label, query, doc, qid, docid])
-                self.max_a_len = max(self.max_a_len, len(query.split(' ')))
-                self.max_b_len = max(self.max_b_len, len(doc.split(' ')))
-
-        # print('a: {} b: {}'.format(self.max_a_len, self.max_b_len))
 
         np.random.shuffle(self.data)
         self.data_i = 0
@@ -150,33 +136,15 @@ class DataGenerator(object):
         tokenized_text.insert(0, "[CLS]")
         tokenized_text.append("[SEP]")
         # Convert token to vocabulary indices
-        tokenized_text = tokenized_text[:512]
         indexed_tokens = self.tokenizer.convert_tokens_to_ids(tokenized_text)
         return indexed_tokens
 
     def tokenize_two(self, a, b):
-        tokenized_text_a = self.tokenizer.tokenize(a)
-        if self.padding:
-            query_padding = ['[PAD]'] * (MAX_QUERY_LEN - len(tokenized_text_a))
-            # Pad query
-            if self.padding == 'left':
-                tokenized_text_a = query_padding + tokenized_text_a
-            elif self.padding == 'right':
-                tokenized_text_a = tokenized_text_a + query_padding
-        tokenized_text_a = ["[CLS]"] + tokenized_text_a + ["[SEP]"]
-
+        b_index = self.tokenize_index(b)
+        tokenized_text_a = ["[CLS]"] + self.tokenizer.tokenize(a) + ["[SEP]"]
         tokenized_text_b = self.tokenizer.tokenize(b)
-        if self.padding:
-            # Pad sequence
-            doc_padding = ['[PAD]'] * (
-                        512 - len(tokenized_text_a))  # account for [SEP]
-            if self.padding == 'left':
-                tokenized_text_b = doc_padding + tokenized_text_b
-            if self.padding == 'right':
-                tokenized_text_b = tokenized_text_b + doc_padding
-        tokenized_text_b = tokenized_text_b[:511 - len(tokenized_text_a)]
+        tokenized_text_b = tokenized_text_b[:510 - len(tokenized_text_a)]
         tokenized_text_b.append("[SEP]")
-
         segments_ids = [0] * len(tokenized_text_a) + [1] * len(tokenized_text_b)
         tokenized_text = tokenized_text_a + tokenized_text_b
         # Convert token to vocabulary indices
@@ -242,7 +210,6 @@ class DataGenerator(object):
             else:  # sentence pair classification
                 if self.data_format == "robust04":
                     label, a, b, qid, docid = instance
-                    # print('a: {} | b: {}'.format(a, b), flush=True)
                     qid = int(qid)
                     docid = int(docid)
                     qid_batch.append(qid)
