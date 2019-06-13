@@ -33,13 +33,21 @@ tar -xzvf birch_data.tar.gz
 ## Inference
 
 ```
-python src/main.py --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --collection <robust04_2cv.csv, robust04_5cv.csv> --inference --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained
+python src/main.py --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --data_path data --collection <robust04_2cv, robust04_5cv> --inference --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained --batch_size <batch_size>
 ```
 
 Note that this step takes a long time. 
 If you don't want to evaluate the pretrained models, you may skip to the next step and evaluate with our predictions under `data/predictions`.
 
 ## Evaluation
+
+### BM25+RM3:
+
+```
+./eval_scripts/baseline.sh <path/to/anserini> <path/to/index> <2, 5>
+```
+
+### Sentence Evidence:
 
 - Compute document score
 
@@ -52,7 +60,9 @@ To use the default hyperparameters, set to False.
 
 - Evaluate with trec_eval
 
-```./eval_scripts/eval.sh <qa_2cv, mb_2cv, qa_5cv, mb_5cv> <path/to/anserini> qrels.robust2004.txt```
+```
+./eval_scripts/eval.sh <bm25+rm3_2cv, qa_2cv, mb_2cv, bm25+rm3_5cv, qa_5cv, mb_5cv> <path/to/anserini> qrels.robust2004.txt
+```
 
 
 ---
@@ -86,6 +96,10 @@ To use the default hyperparameters, set to False.
 |     3S: BERT(MB)    | **0.3278** | **0.4287** |         
  
  See this [paper](https://dl.acm.org/citation.cfm?id=3308781) for the exact fold settings.
+ 
+### Replication Log
+
++ Results replicated by [@emmileaf](https://github.com/emmileaf) on 2019-06-10 (commit [`cc42b60`](https://github.com/castorini/birch/commit/cc42b60093090969c1d9b24cddd1257c1cad66df))
  
  ---
 

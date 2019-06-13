@@ -6,7 +6,7 @@ from inference_utils import evaluate, load_checkpoint, print_scores, load_pretra
 from data import load_data
 
 
-def test(args, predictions_path, model=None, tokenizer=None):
+def test(args, datasets_path, predictions_path, model=None, tokenizer=None):
     if model is None:
         if args.load_trained:
             epoch, arch, model, tokenizer, scores = load_checkpoint(
@@ -16,8 +16,7 @@ def test(args, predictions_path, model=None, tokenizer=None):
             model, tokenizer = load_pretrained_model_tokenizer(base_model=args.local_model,
                                                                base_tokenizer=args.local_tokenizer)
 
-    test_dataset = load_data(args.data_path, args.collection,
-                                  args.batch_size, tokenizer)
+    test_dataset = load_data(datasets_path, args.collection, args.batch_size, tokenizer)
 
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
