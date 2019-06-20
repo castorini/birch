@@ -74,7 +74,7 @@ To use the default hyperparameters, set to False.
 |        Model        | AP     | P@20   |
 |:-------------------:|:------:|:------:|
 |  Paper 1 (two fold) | 0.2971 | 0.3948 |
-| BM25+RM3 (Anserini) | 0.2987 | 0.2871 |         
+| BM25+RM3 (Anserini) | 0.2987 | 0.3871 |         
 |     1S: BERT(QA)    | 0.3014 | 0.3928 |         
 |     2S: BERT(QA)    | 0.3003 | 0.3948 |         
 |     3S: BERT(QA)    | 0.3003 | 0.3948 |         
