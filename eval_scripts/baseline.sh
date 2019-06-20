@@ -17,4 +17,5 @@ fi
 
 python3 src/main/python/fine_tuning/reconstruct_robus04_tuned_run.py --index ${index_path} --folds ${folds_path} --params ${params_path}
 rm run.robust04.bm25+rm3.fold*
+mkdir --parents ${birch_path}/runs
 mv run.robust04.bm25+rm3.txt ${birch_path}/runs/run.bm25+rm3_${num_folds}cv.txt
