@@ -167,7 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('--eval_steps', default=-1, type=int, help='Number of evaluation steps, -1 for evaluation per epoch')
     parser.add_argument('--data_path', default='data', help='Path to data root directory')
     parser.add_argument('--data_name', default='robust04', help='[mb, robust04]')
-    parser.add_argument('--trec_eval_path', default='../eval/trec_eval.9.0.4/trec_eval', help='')
+    parser.add_argument('--trec_eval_path', default='eval/trec_eval.9.0.4/trec_eval', help='')
     parser.add_argument('--pytorch_dump_path', default='saved.model', help='Path to PyTorch model to save/load')
     parser.add_argument('--load_trained', action='store_true', default=False, help='Load pretrained model')
     parser.add_argument('--local_model', default=None, help='[None, path to local model file]')
