@@ -1,5 +1,4 @@
 import os
-import time
 
 import torch
 
@@ -10,8 +9,7 @@ from data import load_data
 def test(args, datasets_path, predictions_path, model=None, tokenizer=None):
     if model is None:
         if args.load_trained:
-            epoch, arch, model, tokenizer, scores = load_checkpoint(
-            args.model_path)
+            epoch, arch, model, tokenizer, scores = load_checkpoint(args.model_path, args.device)
         else:
             # May load local file or download from huggingface
             model, tokenizer = load_pretrained_model_tokenizer(base_model=args.local_model,
@@ -22,12 +20,9 @@ def test(args, datasets_path, predictions_path, model=None, tokenizer=None):
 
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
-    output_file = open(args.output_path, "w")
-    predict_file = open(predictions_path, "w")
+    output_file = open(args.output_path, 'w')
+    predict_file = open(predictions_path, 'w')
     lineno = 1
-
-    start_time = time.time()
-    print('Batch size: {}'.format(args.batch_size))
 
     for batch in test_dataset:
         if batch is None:
@@ -43,14 +38,11 @@ def test(args, datasets_path, predictions_path, model=None, tokenizer=None):
         qids = qid_tensor.cpu().detach().numpy()
         docids = docid_tensor.cpu().detach().numpy()
         for p, qid, docid, s in zip(predicted_index, qids, docids, scores):
-            output_file.write("{}\t{}\n".format(lineno, p))
-            predict_file.write("{} Q0 {} {} {} bert\n".format(qid, docid, lineno, s[1]))
+            output_file.write('{}\t{}\n'.format(lineno, p))
+            predict_file.write('{} Q0 {} {} {} bert\n'.format(qid, docid, lineno, s[1]))
             lineno += 1
             predict_file.flush()
         del predictions
-
-        print("--- %.2f seconds ---" % ((time.time() - start_time) / args.batch_size))
-        start_time = time.time()
 
     output_file.close()
     predict_file.close()
@@ -63,4 +55,4 @@ def test(args, datasets_path, predictions_path, model=None, tokenizer=None):
                                                      'topics-and-qrels',
                                                      args.qrels))
 
-    return [["map", "mrr", "p30"], [map, mrr, p30]]
+    return [['map', 'mrr', 'p30'], [map, mrr, p30]]

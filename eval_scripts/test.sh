@@ -16,7 +16,7 @@ fi
 if [ ${tune_params} == "True" ] ; then
     declare -a sents=("a" "ab" "abc")
 
-    ./eval_scripts/train.sh ${experiment} ${num_folds} ${anserini_path}
+    ./eval_scripts/train.qqsh ${experiment} ${num_folds} ${anserini_path}
 
     for i in "${sents[@]}"
         do

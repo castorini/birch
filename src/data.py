@@ -5,12 +5,12 @@ import torch
 class DataGenerator(object):
     def __init__(self, data_path, data_name):
         super(DataGenerator, self).__init__()
-        self.f = open(os.path.join(data_path, "{}.csv".format(data_name, data_name)))
+        self.f = open(os.path.join(data_path, '{}.csv'.format(data_name, data_name)))
 
     def get_instance(self):
         for l in self.f:
             label, sim, a, b, qid, docid, qidx, didx = \
-                l.replace("\n", "").split("\t")
+                l.replace('\n', '').split('\t')
             return label, sim, a, b, qid, docid, qidx, didx
         return None, None, None, None, None, None, None, None
 
@@ -30,15 +30,6 @@ def load_data(data_path, data_name, batch_size, tokenizer, device='cuda'):
             b = b + ' [SEP]'
             a_index = tokenize_index(a, tokenizer)
             b_index = tokenize_index(b, tokenizer)
-
-            # Pad sequence
-            if padding:
-                doc_padding = [0] * (
-                        512 - len(a_index) - len(b_index))
-                if padding == 'left':
-                    b_index = doc_padding + b_index
-                elif padding == 'right':
-                    b_index = b_index + doc_padding
 
             combine_index = a_index + b_index
             segments_ids = [0] * len(a_index) + [1] * len(b_index)

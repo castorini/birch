@@ -3,11 +3,13 @@ import subprocess
 import sys
 
 import torch
-from pytorch_pretrained_bert import BertTokenizer, \
-    BertForSequenceClassification, BertForNextSentencePrediction, BertForMaskedLM
+from pytorch_pretrained_bert import BertTokenizer, BertForNextSentencePrediction
 
 
 def load_pretrained_model_tokenizer(base_model=None, base_tokenizer=None, device='cuda'):
+    if device == 'cuda':
+        assert torch.cuda.is_available()
+
     # Load pre-trained model (weights)
     if base_model is None:
         # Download from huggingface
@@ -24,26 +26,26 @@ def load_pretrained_model_tokenizer(base_model=None, base_tokenizer=None, device
     return model, tokenizer
 
 
-def load_checkpoint(filename):
-    print("Load PyTorch model from {}".format(filename))
-    state = torch.load(filename, map_location='cpu')
-    return state['epoch'], state['arch'], state['model'], state['tokenizer'], \
-           state['scores']
+def load_checkpoint(filename, device='cpu'):
+    print('Load PyTorch model from {}'.format(filename))
+    state = torch.load(filename, map_location='cpu') if device == 'cpu' else torch.load(filename)
+    return state['epoch'], state['arch'], state['model'], \
+           state['tokenizer'], state['scores']
 
 
-def print_scores(scores, mode="test"):
-    print("")
-    print("[{}] ".format(mode), end="")
+def print_scores(scores, mode='test'):
+    print()
+    print('[{}] '.format(mode), end='')
     for sn, score in zip(scores[0], scores[1]):
-        print("{}: {}".format(sn, score), end=" ")
-    print("")
+        print('{}: {}'.format(sn, score), end=' ')
+    print()
 
 
 def evaluate(trec_eval_path, predictions_file, qrels_file):
-    cmd = trec_eval_path + " {judgement} {output} -m map -m recip_rank -m P.30".format(
+    cmd = trec_eval_path + ' {judgement} {output} -m map -m recip_rank -m P.30'.format(
         judgement=qrels_file, output=predictions_file)
     pargs = shlex.split(cmd)
-    print("running {}".format(cmd))
+    print('Running {}'.format(cmd))
     p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pout, perr = p.communicate()
 

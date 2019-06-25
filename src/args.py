@@ -20,6 +20,7 @@ def get_args():
                         help='Path to write outputs')
     parser.add_argument('--cv_fold', default=5)
 
+    parser.add_argument('--device', default='cpu', help='[cuda, cpu]')
     parser.add_argument('--inference', action='store_true', default=False,
                         help='Evaluate model if True, use prediction files otherwise')
     parser.add_argument('--model_path', default='models/saved.tmp', help='Path to pretrained model')

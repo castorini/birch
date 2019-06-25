@@ -19,8 +19,7 @@ def main():
     experiment = args.experiment
     inference = args.inference
     anserini_path = args.anserini_path
-    predictions_path = os.path.join(args.data_path, 'predictions',
-                                    'predict.' + experiment)
+    predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment)
     datasets_path = os.path.join(args.data_path, 'datasets')
 
     if inference:
