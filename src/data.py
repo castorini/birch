@@ -15,7 +15,7 @@ class DataGenerator(object):
         return None, None, None, None, None, None, None, None
 
 
-def load_data(data_path, data_name, batch_size, tokenizer, device="cpu", padding=None, max_query_len=10):
+def load_data(data_path, data_name, batch_size, tokenizer, device='cuda'):
     test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
     data_set = []
     while True:
@@ -26,18 +26,8 @@ def load_data(data_path, data_name, batch_size, tokenizer, device="cpu", padding
             if label is None:
                 break
 
-            # Pad query
-            if padding:
-                query_padding = ['[PAD]'] * (
-                    max_query_len - len(a.split(' ')))
-                query_padding = ' '.join(query_padding)
-                if padding == 'left':
-                    a = query_padding + " " + a
-                elif padding == 'right':
-                    a = a + " " + query_padding
-            a = "[CLS] " + a + " [SEP]"
-
-            b = b + " [SEP]"
+            a = '[CLS] ' + a + ' [SEP]'
+            b = b + ' [SEP]'
             a_index = tokenize_index(a, tokenizer)
             b_index = tokenize_index(b, tokenizer)
 

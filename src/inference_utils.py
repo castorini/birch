@@ -7,7 +7,7 @@ from pytorch_pretrained_bert import BertTokenizer, \
     BertForSequenceClassification, BertForNextSentencePrediction, BertForMaskedLM
 
 
-def load_pretrained_model_tokenizer(base_model=None, base_tokenizer=None):
+def load_pretrained_model_tokenizer(base_model=None, base_tokenizer=None, device='cuda'):
     # Load pre-trained model (weights)
     if base_model is None:
         # Download from huggingface
@@ -20,7 +20,7 @@ def load_pretrained_model_tokenizer(base_model=None, base_tokenizer=None):
     else:
         # Load local vocab file
         tokenizer = BertTokenizer.from_pretrained(base_tokenizer)
-    model.to('cpu')
+    model.to(device)
     return model, tokenizer
 
 

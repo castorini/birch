@@ -25,8 +25,10 @@ def eval_bm25(collection_file, topK=1000):
             if rank <= topK:
                 top_doc_dict[qid].append(doc)
             rank += 1
-    for qid in top_doc_dict:
-        assert(len(top_doc_dict[qid]) == topK)
+    # for qid in top_doc_dict:
+    #     print('qid: {}'.format(qid))
+    #     print(len(top_doc_dict[qid]))
+        # assert(len(top_doc_dict[qid]) == topK)
     return top_doc_dict, doc_score_dict, sent_dict, q_dict, doc_label_dict
 
 
