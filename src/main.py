@@ -22,6 +22,9 @@ def main():
     predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment)
     datasets_path = os.path.join(args.data_path, 'datasets')
 
+    if not os.path.isdir('log'):
+        os.mkdir('log')
+
     if inference:
         scores = test(args, datasets_path, predictions_path)
         print_scores(scores)
