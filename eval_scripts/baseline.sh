@@ -8,11 +8,11 @@ birch_path=$(pwd)
 cd ${anserini_path}
 
 if [ ${num_folds} == '5' ] ; then
-    folds_path="src/main/resources/fine_tuning/robust04-paper2-folds.json"
-    params_path="src/main/resources/fine_tuning/robust04-paper2-folds-map-params.json"
+    folds_path="src2/main/resources/fine_tuning/robust04-paper2-folds.json"
+    params_path="src2/main/resources/fine_tuning/robust04-paper2-folds-map-params.json"
 else
-    folds_path="src/main/resources/fine_tuning/robust04-paper1-folds.json"
-    params_path="src/main/resources/fine_tuning/robust04-paper1-folds-map-params.json"
+    folds_path="src2/main/resources/fine_tuning/robust04-paper1-folds.json"
+    params_path="src2/main/resources/fine_tuning/robust04-paper1-folds-map-params.json"
 fi
 
 python3 src/main/python/fine_tuning/reconstruct_robus04_tuned_run.py --index ${index_path} --folds ${folds_path} --params ${params_path}

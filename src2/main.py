@@ -29,8 +29,8 @@ def main():
         scores = test(args, datasets_path, predictions_path)
         print_scores(scores)
     else:
-        folds_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
-        qrels_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', args.qrels_file)
+        folds_path = os.path.join(anserini_path, 'src2', 'main', 'resources', 'fine_tuning', args.folds_file)
+        qrels_path = os.path.join(anserini_path, 'src2', 'main', 'resources', 'topics-and-qrels', args.qrels_file)
 
         topK = int(other[0])
         alpha = float(other[1])
