@@ -29,7 +29,7 @@ if [ ${tune_params} == "True" ] ; then
                 gamma=$(echo ${line#?} | cut -d" " -f3)
             done < "log/${experiment}/${j}${i}_best.txt"
 
-            python src/main.py --experiment ${experiment} --collection ${collection} --anserini_path ${anserini_path} --folds_file ${folds_file} 3 ${alpha} ${beta} ${gamma} ${j} test
+            python src/main.py --mode retrieval --experiment ${experiment} --collection ${collection} --anserini_path ${anserini_path} --folds_file ${folds_file} 3 ${alpha} ${beta} ${gamma} ${j} test
         done
         cat runs/run.${experiment}.cv.test.* > runs/run.${experiment}.cv.${i}
     done

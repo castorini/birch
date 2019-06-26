@@ -30,10 +30,15 @@ wget https://zenodo.org/record/3241945/files/birch_data.tar.gz
 tar -xzvf birch_data.tar.gz
 ```
 
+# Training
+```
+python src/main.py --mode training --collection mb --qrels_file qrels.microblog.txt --batch_size <batch_size> --eval_steps <eval_steps> --learning_rate <learning_rate> --num_train_epochs <num_train_epochs> --device cuda
+```
+
 ## Inference
 
 ```
-python src/main.py --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --data_path data --collection <robust04_2cv, robust04_5cv> --inference --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained --batch_size <batch_size>
+python src/main.py --mode inference --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --collection <robust04_2cv, robust04_5cv> --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained --batch_size <batch_size> --device cuda
 ```
 
 Note that this step takes a long time. 
