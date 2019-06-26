@@ -3,21 +3,26 @@ import os
 import random
 
 import numpy as np
+import torch
 
 from eval_bert import eval_bm25, load_bert_scores, calc_q_doc_bert
-from inference import test
-from inference_utils import print_scores
+from model.train import train
+from model.test import test
+from model.utils import print_scores
 from args import get_args
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
+torch.manual_seed(RANDOM_SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(RANDOM_SEED)
+
 
 def main():
     args, other = get_args()
 
     experiment = args.experiment
-    inference = args.inference
     anserini_path = args.anserini_path
     predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment)
     datasets_path = os.path.join(args.data_path, 'datasets')
@@ -25,8 +30,10 @@ def main():
     if not os.path.isdir('log'):
         os.mkdir('log')
 
-    if inference:
-        scores = test(args, datasets_path, predictions_path)
+    if args.mode == 'training':
+        train(args)
+    elif args.mode == 'inference':
+        scores = test(args)
         print_scores(scores)
     else:
         folds_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
