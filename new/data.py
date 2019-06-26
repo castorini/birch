@@ -25,8 +25,7 @@ class DataGenerator(object):
 
         for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
             self.data.append([sim.replace('\n', ''), a.replace('\n', ''),
-                              b.replace('\n', ''), \
-                              ID.replace('\n', '')])
+                              b.replace('\n', ''), ID.replace('\n', '')])
             self.lengths.append(len(b.replace('\n', '').split()))
 
         np.random.shuffle(self.data)
