@@ -30,7 +30,16 @@ wget https://zenodo.org/record/3241945/files/birch_data.tar.gz
 tar -xzvf birch_data.tar.gz
 ```
 
-# Training
+## Dataset
+
+```
+python src/robust04_cv.py --anserini_path <path/to/anserini> --index_path <path/to/index> --cv_fold <2, 5>
+```
+
+This step retrieves documents to depth 1000 for each query, and splits them into sentences to generate folds data. You may skip to the next step and and use the downloaded data under `data/datasets`.
+
+## Training
+
 ```
 python src/main.py --mode training --collection mb --qrels_file qrels.microblog.txt --batch_size <batch_size> --eval_steps <eval_steps> --learning_rate <learning_rate> --num_train_epochs <num_train_epochs> --device cuda
 ```

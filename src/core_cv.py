@@ -14,5 +14,6 @@ if __name__ == '__main__':
     qid2docid = get_relevant_docids(fqrel)
     qid2text = get_query(ftopic, collection=collection)
 
-    searcher = build_searcher(k1=0.9, b=0.4, index_path=index_path, rm3=True)
-    search_document(searcher, qid2docid, qid2text, output_fn, collection, K=1000)
+    docsearch = Searcher(anserini_path)
+    searcher = docsearch.build_searcher(k1=0.9, b=0.4, index_path=index_path, rm3=True)
+    docsearch.search_document(searcher, qid2docid, qid2text, output_fn, collection, K=1000)
