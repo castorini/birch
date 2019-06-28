@@ -34,8 +34,7 @@ class Searcher:
             searcher.setRM3Reranker(fb_terms, fb_docs, original_query_weight, False)
         return searcher
 
-
-    def search_document(self, searcher, qid2docid, qid2text, output_fn, collection='robust04', K=1000, topics=None):
+    def search_document(self, searcher, qid2docid, qid2text, output_fn, collection='robust04', K=1000, topics=None, cv_fold=None):
         output_dir = os.path.dirname(output_fn)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -68,13 +67,19 @@ class Searcher:
                             seq_list = chunk_sent(sent, MAX_INPUT_LENGTH)
                             for seq in seq_list:
                                 sentno = docno + '_' + str(sentid)
-                                out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 16), text, seq, qid, sentno, self.qidx, self.didx))
+                                if cv_fold == '5': 
+                                    out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, seq, qid, sentno, qid, self.didx-1))
+                                else:
+                                    out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 16), text, seq, qid, sentno, self.qidx, self.didx))
                                 out.flush()
                                 sentid += 1
                                 self.didx += 1
                         else:
                             sentno = docno + '_' + str(sentid)
-                            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 16), text, sent, qid, sentno, self.qidx, self.didx))
+                            if cv_fold == '5': 
+                                out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, sent, qid, sentno, qid, self.didx-1))
+                            else:
+                                out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 16), text, sent, qid, sentno, self.qidx, self.didx))
                             out.flush()
                             sentid += 1
                             self.didx += 1
