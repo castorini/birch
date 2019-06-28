@@ -84,3 +84,44 @@ class Searcher:
                             sentid += 1
                             self.didx += 1
                 self.qidx += 1
+
+
+    def search_query(self, searcher, query, output_fn, collection='robust04', K=1000):
+        output_dir = os.path.dirname(output_fn)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        with open(output_fn, 'w', encoding="utf-8") as out:
+
+            hits = searcher.search(self.JString(query), K)
+            for i in range(len(hits)):
+                sim = hits[i].score
+                docno = hits[i].docid
+                content = hits[i].content
+                if collection == 'core18':
+                    content_json = json.loads(content)
+                    content = ''
+                    for each in content_json['contents']:
+                        if each is not None and 'content' in each.keys():
+                            content += '{}\n'.format(each['content'])
+                if collection == 'robust04':
+                    content = parse_doc_from_index(content)
+                clean_content = clean_html(content, collection=collection)
+                tokenized_content = tokenizer.tokenize(clean_content)
+                sentid = 0
+                for sent in tokenized_content:
+                    # Split sentence if it's longer than BERT's maximum input length
+                    if len(sent.strip().split()) > MAX_INPUT_LENGTH:
+                        seq_list = chunk_sent(sent, MAX_INPUT_LENGTH)
+                        for seq in seq_list:
+                            sentno = docno + '_' + str(sentid)
+                            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(0, round(float(sim), 16), query, seq, 0, sentno, 0, self.didx))
+                            out.flush()
+                            sentid += 1
+                            self.didx += 1
+                    else:
+                        sentno = docno + '_' + str(sentid)
+                        out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(0, round(float(sim), 16), query, sent, 0, sentno, 0, self.didx))
+                        out.flush()
+                        sentid += 1
+                        self.didx += 1
