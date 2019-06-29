@@ -69,20 +69,18 @@ def main():
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
-        topics = test_topics if not args.interactive else list(q_dict.keys())
-
-        print(topics)
 
         if not os.path.isdir('runs'):
             os.mkdir('runs')
 
         if mode == 'train':
+            topics = train_topics if not args.interactive else list(q_dict.keys())
             # Grid search for best parameters
             for a in np.arange(0.0, alpha, 0.1):
                 for b in np.arange(0.0, beta, 0.1):
                     for g in np.arange(0.0, gamma, 0.1):
                         calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.train',
-                                        train_topics, top_doc_dict, doc_bm25_dict,
+                                        topics, top_doc_dict, doc_bm25_dict,
                                         topK, a, b, g)
                         base = 'runs/run.' + experiment + '.cv.train'
                         os.system('{}/eval/trec_eval.9.0.4/trec_eval -M1000 -m map {} {}> eval.base'.format(anserini_path, qrels_path, base))
@@ -94,12 +92,18 @@ def main():
                                         round(b, 2), round(g, 2), map_score)
 
         elif mode == 'test':
+            topics = test_topics if not args.interactive else list(
+                q_dict.keys())
             calc_q_doc_bert(score_dict,
                             'run.' + experiment + '.cv.test.' + str(test_folder_set),
                             topics, top_doc_dict, doc_bm25_dict, topK, alpha,
                             beta, gamma)
         else:
-            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', all_topics,
+            topics = all_topics if not args.interactive else list(
+                q_dict.keys())
+            if args.interactive:
+                print('Top 10 documents for query: "{}"'.format(args.query))
+            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
                             top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
 
