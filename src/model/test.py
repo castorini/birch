@@ -38,7 +38,8 @@ def test(args, split='test', model=None, tokenizer=None, training_or_lm=False):
                                  device=args.device)
     else:
         # Load Robust04 data
-        test_dataset = load_trec_data(args.data_path, args.collection,
+        collection = args.collection if not args.interactive else 'query_sents'
+        test_dataset = load_trec_data(args.data_path, collection,
                                       args.batch_size, tokenizer, split,
                                       args.device)
 
@@ -72,8 +73,12 @@ def test(args, split='test', model=None, tokenizer=None, training_or_lm=False):
     output_file.close()
     predict_file.close()
 
-    map, mrr, p30 = evaluate(args.trec_eval_path,
-                             predictions_file=predictions_path,
-                             qrels_file=os.path.join(args.data_path, args.qrels_file))
+    if args.interactive:
+        return None
 
-    return [['map', 'mrr', 'p30'], [map, mrr, p30]]
+    else:
+        map, mrr, p30 = evaluate(args.trec_eval_path,
+                                 predictions_file=predictions_path,
+                                 qrels_file=os.path.join(args.data_path, args.qrels_file))
+
+        return [['map', 'mrr', 'p30'], [map, mrr, p30]]

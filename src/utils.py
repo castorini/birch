@@ -1,9 +1,17 @@
 import sys
 import re
 import nltk
+import ssl
 from importlib import reload
 
 reload(sys)
+
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
 
 nltk.download('punkt')
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')

@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 
 def get_args():
     parser = ArgumentParser(description='birch')
-    parser.add_argument('--mode', default='training', help='[training, inference, retrieval]')
+    parser.add_argument('--mode', default='retrieval', help='[training, inference, retrieval]')
     parser.add_argument('--output_path', default='out.tmp', help='Name of log file')
     parser.add_argument('--data_path', default='data')
     parser.add_argument('--qrels_file', default='qrels.robust2004.txt',
@@ -11,8 +11,9 @@ def get_args():
                         help='[mb, robust04, core17, core18]')
 
     # Interactive
+    parser.add_argument('--interactive', action='store_true', default=False, help='Batch evaluation if not set')
     parser.add_argument('--query', default='hubble space telescope', help='Query string')
-    parser.add_argument('--result_path', default='data/query.csv', help='Path to output sentence results from query')
+    parser.add_argument('--interactive_path', default='data/datasets/query_sents.csv', help='Path to output sentence results from query')
 
     # Retrieval
     parser.add_argument('--experiment', default='base_mb_robust04',
