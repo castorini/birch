@@ -10,6 +10,7 @@ from model.train import train
 from model.test import test
 from model.utils import print_scores
 from args import get_args
+from query import query_sents
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -24,7 +25,6 @@ def main():
 
     experiment = args.experiment
     anserini_path = args.anserini_path
-    predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment)
     datasets_path = os.path.join(args.data_path, 'datasets')
 
     if not os.path.isdir('log'):
@@ -57,8 +57,21 @@ def main():
             else:
                 test_topics.extend(folds[i])
 
-        top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(os.path.join(datasets_path, args.collection + '.csv'))
+        if args.interactive:
+            query_sents(args)
+            test(args)  # inference over each sentence
+
+        collection_path = os.path.join(datasets_path,
+                                       args.collection + '.csv') if not args.interactive else args.interactive_path
+        predictions_path = os.path.join(args.data_path, 'predictions',
+                                        'predict.' + experiment) if not args.interactive else os.path.join(
+            args.data_path, 'predictions', args.predict_path)
+
+        top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
+        topics = test_topics if not args.interactive else list(q_dict.keys())
+
+        print(topics)
 
         if not os.path.isdir('runs'):
             os.mkdir('runs')
@@ -83,7 +96,7 @@ def main():
         elif mode == 'test':
             calc_q_doc_bert(score_dict,
                             'run.' + experiment + '.cv.test.' + str(test_folder_set),
-                            test_topics, top_doc_dict, doc_bm25_dict, topK, alpha,
+                            topics, top_doc_dict, doc_bm25_dict, topK, alpha,
                             beta, gamma)
         else:
             calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', all_topics,
