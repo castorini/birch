@@ -12,6 +12,9 @@ def evaluate(trec_eval_path, predictions_file, qrels_file):
     p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pout, perr = p.communicate()
 
+    print(pout)
+    print(perr)
+
     if sys.version_info[0] < 3:
         lines = pout.split(b'\n')
     else:
