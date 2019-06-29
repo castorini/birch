@@ -10,6 +10,10 @@ def get_args():
     parser.add_argument('--collection', default='robust04',
                         help='[mb, robust04, core17, core18]')
 
+    # Interactive
+    parser.add_argument('--query', default='hubble space telescope', help='Query string')
+    parser.add_argument('--result_path', default='data/query.csv', help='Path to output sentence results from query')
+
     # Retrieval
     parser.add_argument('--experiment', default='base_mb_robust04',
                         help='Experiment name for logging')

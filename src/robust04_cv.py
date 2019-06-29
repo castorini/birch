@@ -43,7 +43,7 @@ if __name__ == '__main__':
         searcher = docsearch.build_searcher(k1=k1, b=b, fb_terms=fb_terms, fb_docs=fb_docs,
           original_query_weight=original_query_weight,index_path=index_path, rm3=True)
         docsearch.search_document(searcher, qid2docid, qid2text, output_fn + str(folder_idx),
-          'robust04', 1000, topics)
+          'robust04', 1000, topics, cv_fold)
 
         folder_idx += 1
 
