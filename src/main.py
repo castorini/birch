@@ -2,6 +2,8 @@ import json
 import os
 import random
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -11,6 +13,8 @@ from model.test import test
 from model.utils import print_scores
 from args import get_args
 from query import query_sents
+
+matplotlib.use('tkagg')
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -101,10 +105,23 @@ def main():
         else:
             topics = all_topics if not args.interactive else list(
                 q_dict.keys())
-            if args.interactive:
-                print('Top 10 documents for query: "{}"'.format(args.query))
-            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
+            top_docs = calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
                             top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
+
+            doc_id_list = [d[0] for d in top_docs]
+            X = np.arange(len(doc_id_list))
+            bm25_score_list = np.array([d[1] for d in top_docs])
+            bert_score_list = np.array([d[2] for d in top_docs])
+
+            plt.bar(X, bm25_score_list, width=0.25, color='r')
+            plt.bar(X, bert_score_list, width=0.25, bottom=bm25_score_list, color='b')
+
+            plt.xticks(X, doc_id_list)
+            plt.xlabel('Document ID')
+            plt.ylabel('Overall Document Score')
+            plt.legend(['BM25', 'BERT'], loc='upper right')
+
+            plt.show()
 
 
 if __name__ == "__main__":

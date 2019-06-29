@@ -49,8 +49,8 @@ def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
                     topKSent, alpha, beta, gamma):
     run_file = open(os.path.join('runs', run_file), "w")
 
-    top_docs = {}
-
+    doc_scores = {}
+    top_rank_docs = []
     for q in topics:
         doc_score_dict = {}
         for d in top_doc_dict[q]:
@@ -63,16 +63,18 @@ def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
                 score_list.append(s)
                 sum_score += s * w
             doc_score_dict[d] = alpha * bm25_dict[q][d] + (1.0 - alpha) * sum_score
-            top_docs[d] = (bm25_dict[q][d], sum_score, doc_score_dict[d])  # used only for interactive querying where len(topics) = 1
+            doc_scores[d] = (bm25_dict[q][d], sum_score, doc_score_dict[d])  # used only for interactive querying where len(topics) = 1
 
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
             if rank <= 10:
-                print('doc id: {} | doc score: {} | BERT score: {} | overall score: {}'.format(doc, top_docs[doc][0], top_docs[doc][1], top_docs[doc][2]))
+                top_rank_docs.append((doc, doc_scores[doc][0], doc_scores[doc][1], doc_scores[doc][2]))
             run_file.write("{} Q0 {} {} {} BERT\n".format(q, doc, rank, score))
             rank += 1
 
     run_file.close()
 
+    top_rank_docs.sort(key=lambda x: x[3], reverse=True)
+    return top_rank_docs
 
