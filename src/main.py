@@ -11,7 +11,7 @@ from model.train import train
 from model.test import test
 from model.utils import print_scores
 from args import get_args
-from query import query_sents
+from query import query_sents, visualize_scores
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -59,7 +59,7 @@ def main():
                 test_topics.extend(folds[i])
 
         if args.interactive:
-            query_sents(args)
+            sentid2text = query_sents(args)
             test(args)  # inference over each sentence
 
         collection_path = os.path.join(datasets_path,
@@ -70,6 +70,11 @@ def main():
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
+
+        if args.interactive:
+            top_rank_docs = visualize_scores(collection_path, score_dict)
+            for doc in top_rank_docs:
+                print(sentid2text[doc[0]], doc[1], doc[2], doc[3])
 
         if not os.path.isdir('runs'):
             os.mkdir('runs')

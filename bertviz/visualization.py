@@ -23,7 +23,8 @@ import os
 import sys
 
 # Switch to local pytorch_pretrained_bert for visualization
-sys.path.insert(0, os.path.join(os.getcwd(), 'bertviz'))
+sys.path.insert(0, os.path.join(os.getcwd(), 'birch', 'bertviz'))
+import bertviz.pytorch_pretrained_bert as pytorch_pretrained_bert
 
 
 class AttentionVisualizer:
