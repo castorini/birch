@@ -17,15 +17,24 @@
 # - Adapted to BERT model
 #
 
-
 import torch
+
+import os
+import sys
+
+# Switch to local pytorch_pretrained_bert for visualization
+sys.path.insert(0, os.path.join(os.getcwd(), 'bertviz'))
+
 
 class AttentionVisualizer:
 
-    def __init__(self, model, tokenizer):
-        self.model = model
-        self.tokenizer = tokenizer
+    def __init__(self, model_path):
+        state_dict = torch.load(model_path)
+        self.model, self.tokenizer = state_dict['model'], state_dict['tokenizer']
+        self.model.output_attentions = True
+        self.model = self.model.cuda()
         self.model.eval()
+        self.tokenizer.never_split = ("[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]")
 
     def get_viz_data(self, sentence_a, sentence_b):
         tokens_tensor, token_type_tensor, tokens_a, tokens_b = self._get_inputs(sentence_a, sentence_b)
@@ -49,6 +58,3 @@ class AttentionVisualizer:
         attn_tensor = torch.stack([attn_data['attn_probs'] for attn_data in attn_data_list])
         attn_tensor = attn_tensor.cpu()
         return attn_tensor.data.numpy()
-
-
-

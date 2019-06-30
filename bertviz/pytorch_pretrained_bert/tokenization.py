@@ -86,7 +86,6 @@ class BertTokenizer(object):
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case,
                                               never_split=never_split)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
-        self.max_len = max_len if max_len is not None else int(1e12)
 
     def tokenize(self, text):
         split_tokens = []
@@ -100,11 +99,11 @@ class BertTokenizer(object):
         ids = []
         for token in tokens:
             ids.append(self.vocab[token])
-        if len(ids) > self.max_len:
+        if len(ids) > 512:
             raise ValueError(
                 "Token indices sequence length is longer than the specified maximum "
                 " sequence length for this BERT model ({} > {}). Running this"
-                " sequence through BERT will result in indexing errors".format(len(ids), self.max_len)
+                " sequence through BERT will result in indexing errors".format(len(ids), 512)
             )
         return ids
 
@@ -178,10 +177,11 @@ class BasicTokenizer(object):
         # characters in the vocabulary because Wikipedia does have some Chinese
         # words in the English Wikipedia.).
         text = self._tokenize_chinese_chars(text)
+        never_split = ("[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]")
         orig_tokens = whitespace_tokenize(text)
         split_tokens = []
         for token in orig_tokens:
-            if self.do_lower_case and token not in self.never_split:
+            if self.do_lower_case and token not in never_split:
                 token = token.lower()
                 token = self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
@@ -202,7 +202,8 @@ class BasicTokenizer(object):
 
     def _run_split_on_punc(self, text):
         """Splits punctuation on a piece of text."""
-        if text in self.never_split:
+        never_split = ("[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]")
+        if text in never_split:
             return [text]
         chars = list(text)
         i = 0

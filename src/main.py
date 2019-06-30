@@ -122,7 +122,7 @@ def main():
                 plt.legend(['BM25', 'BERT'], loc='upper right')
 
                 plt.show()
-                fig.savefig('interactive_graph_{}.png'.format(args.query))
+                fig.savefig('interactive_graph.png')
 
 
 if __name__ == "__main__":
