@@ -106,6 +106,8 @@ def main():
                             top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
             if args.interactive:
+                fig = plt.figure()
+
                 doc_id_list = [d[0] for d in top_docs]
                 X = np.arange(len(doc_id_list))
                 bm25_score_list = np.array([d[1] for d in top_docs])
@@ -120,6 +122,7 @@ def main():
                 plt.legend(['BM25', 'BERT'], loc='upper right')
 
                 plt.show()
+                fig.savefig('interactive_graph_{}.png'.format(args.query))
 
 
 if __name__ == "__main__":

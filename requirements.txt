@@ -4,6 +4,7 @@ certifi==2019.3.9
 chardet==3.0.4
 docutils==0.14
 idna==2.8
+ipython==7.6.0
 jmespath==0.9.4
 jnius==1.1.0
 matplotlib==3.1.0
