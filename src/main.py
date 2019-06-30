@@ -3,9 +3,6 @@ import os
 import random
 
 import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('agg')
-
 import numpy as np
 import torch
 
@@ -108,20 +105,21 @@ def main():
             top_docs = calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
                             top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
-            doc_id_list = [d[0] for d in top_docs]
-            X = np.arange(len(doc_id_list))
-            bm25_score_list = np.array([d[1] for d in top_docs])
-            bert_score_list = np.array([d[2] for d in top_docs])
+            if args.interactive:
+                doc_id_list = [d[0] for d in top_docs]
+                X = np.arange(len(doc_id_list))
+                bm25_score_list = np.array([d[1] for d in top_docs])
+                bert_score_list = np.array([d[2] for d in top_docs])
 
-            plt.bar(X, bm25_score_list, width=0.25, color='r')
-            plt.bar(X, bert_score_list, width=0.25, bottom=bm25_score_list, color='b')
+                plt.bar(X, bm25_score_list, width=0.25, color='r')
+                plt.bar(X, bert_score_list, width=0.25, bottom=bm25_score_list, color='b')
 
-            plt.xticks(X, doc_id_list, rotation='vertical')
-            plt.xlabel('Document ID')
-            plt.ylabel('Overall Document Score')
-            plt.legend(['BM25', 'BERT'], loc='upper right')
+                plt.xticks(X, doc_id_list, rotation='vertical')
+                plt.xlabel('Document ID')
+                plt.ylabel('Overall Document Score')
+                plt.legend(['BM25', 'BERT'], loc='upper right')
 
-            plt.show()
+                plt.show()
 
 
 if __name__ == "__main__":
