@@ -2,8 +2,10 @@ import json
 import os
 import random
 
-import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('agg')
+
 import numpy as np
 import torch
 
@@ -13,8 +15,6 @@ from model.test import test
 from model.utils import print_scores
 from args import get_args
 from query import query_sents
-
-matplotlib.use('tkagg')
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -116,7 +116,7 @@ def main():
             plt.bar(X, bm25_score_list, width=0.25, color='r')
             plt.bar(X, bert_score_list, width=0.25, bottom=bm25_score_list, color='b')
 
-            plt.xticks(X, doc_id_list)
+            plt.xticks(X, doc_id_list, rotation='vertical')
             plt.xlabel('Document ID')
             plt.ylabel('Overall Document Score')
             plt.legend(['BM25', 'BERT'], loc='upper right')

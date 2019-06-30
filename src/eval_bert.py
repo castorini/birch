@@ -68,7 +68,7 @@ def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
-            if rank <= 10:
+            if rank <= 50:
                 top_rank_docs.append((doc, doc_scores[doc][0], doc_scores[doc][1], doc_scores[doc][2]))
             run_file.write("{} Q0 {} {} {} BERT\n".format(q, doc, rank, score))
             rank += 1
