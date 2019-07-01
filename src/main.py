@@ -2,7 +2,6 @@ import json
 import os
 import random
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -62,19 +61,19 @@ def main():
             sentid2text = query_sents(args)
             test(args)  # inference over each sentence
 
-        collection_path = os.path.join(datasets_path,
-                                       args.collection + '.csv') if not args.interactive else args.interactive_path
-        predictions_path = os.path.join(args.data_path, 'predictions',
-                                        'predict.' + experiment) if not args.interactive else os.path.join(
-            args.data_path, 'predictions', args.predict_path)
+        collection_path = os.path.join(datasets_path, args.collection + '.csv') if not args.interactive else args.interactive_path
+        predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment) if not args.interactive else os.path.join(args.data_path, 'predictions', args.predict_path)
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
 
         if args.interactive:
             top_rank_docs = visualize_scores(collection_path, score_dict)
-            for doc in top_rank_docs:
-                print(sentid2text[doc[0]], doc[1], doc[2], doc[3])
+            with open(os.path.join(args.data_path, 'query_sent_scores.csv'), 'w') as scores_file:
+                for doc in top_rank_docs[:100]:
+                    scores_file.write('{} | {} | {} | {} | {}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
+                for doc in top_rank_docs[-100:]:
+                    scores_file.write('{} | {} | {} | {} | {}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
 
         if not os.path.isdir('runs'):
             os.mkdir('runs')
@@ -107,27 +106,8 @@ def main():
         else:
             topics = all_topics if not args.interactive else list(
                 q_dict.keys())
-            top_docs = calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
+            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
                             top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
-
-            if args.interactive:
-                fig = plt.figure()
-
-                doc_id_list = [d[0] for d in top_docs]
-                X = np.arange(len(doc_id_list))
-                bm25_score_list = np.array([d[1] for d in top_docs])
-                bert_score_list = np.array([d[2] for d in top_docs])
-
-                plt.bar(X, bm25_score_list, width=0.25, color='r')
-                plt.bar(X, bert_score_list, width=0.25, bottom=bm25_score_list, color='b')
-
-                plt.xticks(X, doc_id_list, rotation='vertical')
-                plt.xlabel('Document ID')
-                plt.ylabel('Overall Document Score')
-                plt.legend(['BM25', 'BERT'], loc='upper right')
-
-                plt.show()
-                fig.savefig('interactive_graph.png')
 
 
 if __name__ == "__main__":

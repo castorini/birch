@@ -23,11 +23,10 @@ def visualize_scores(collection_path, bert_scores):
             label, doc_score, query, sent, qid, did, qno, dno = line.strip().split('\t')
             doc_id, sent_id = did.split('_')[0], int(did.split('_')[1])
             bert_score = bert_scores['0'][doc_id][sent_id]
-            top_rank_docs.append((did, doc_score, bert_score, float(doc_score) - bert_score))
+            top_rank_docs.append((did, float(doc_score), bert_score, float(doc_score) - bert_score))
 
     top_rank_docs.sort(key=lambda x: x[3], reverse=True)
-
-    return top_rank_docs[:25]
+    return top_rank_docs
 
 
 if __name__ == '__main__':
