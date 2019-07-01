@@ -85,14 +85,13 @@ class Searcher:
                             self.didx += 1
                 self.qidx += 1
 
-
     def search_query(self, searcher, query, output_fn, collection='robust04', K=1000):
         output_dir = os.path.dirname(output_fn)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
         with open(output_fn, 'w', encoding="utf-8") as out:
-
+            sentid2text = {}
             hits = searcher.search(self.JString(query), K)
             for i in range(len(hits)):
                 sim = hits[i].score
@@ -119,9 +118,13 @@ class Searcher:
                             out.flush()
                             sentid += 1
                             self.didx += 1
+                            sentid2text[sentno] = seq
                     else:
                         sentno = docno + '_' + str(sentid)
                         out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(0, round(float(sim), 16), query, sent, 0, sentno, 0, self.didx))
                         out.flush()
                         sentid += 1
                         self.didx += 1
+                        sentid2text[sentno] = sent
+
+        return sentid2text

@@ -10,7 +10,7 @@ from model.train import train
 from model.test import test
 from model.utils import print_scores
 from args import get_args
-from query import query_sents
+from query import query_sents, visualize_scores
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -58,17 +58,22 @@ def main():
                 test_topics.extend(folds[i])
 
         if args.interactive:
-            query_sents(args)
+            sentid2text = query_sents(args)
             test(args)  # inference over each sentence
 
-        collection_path = os.path.join(datasets_path,
-                                       args.collection + '.csv') if not args.interactive else args.interactive_path
-        predictions_path = os.path.join(args.data_path, 'predictions',
-                                        'predict.' + experiment) if not args.interactive else os.path.join(
-            args.data_path, 'predictions', args.predict_path)
+        collection_path = os.path.join(datasets_path, args.collection + '.csv') if not args.interactive else args.interactive_path
+        predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment) if not args.interactive else os.path.join(args.data_path, 'predictions', args.predict_path)
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
+
+        if args.interactive:
+            top_rank_docs = visualize_scores(collection_path, score_dict)
+            with open(os.path.join(args.data_path, 'query_sent_scores.csv'), 'w') as scores_file:
+                for doc in top_rank_docs[:100]:
+                    scores_file.write('{} | {} | {} | {} | {}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
+                for doc in top_rank_docs[-100:]:
+                    scores_file.write('{} | {} | {} | {} | {}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
 
         if not os.path.isdir('runs'):
             os.mkdir('runs')
@@ -101,8 +106,6 @@ def main():
         else:
             topics = all_topics if not args.interactive else list(
                 q_dict.keys())
-            if args.interactive:
-                print('Top 10 documents for query: "{}"'.format(args.query))
             calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
                             top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
