@@ -66,17 +66,14 @@ def main():
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
         score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
-        topics = test_topics if not args.interactive else list(q_dict.keys())
-
-        print(topics)
 
         if args.interactive:
             top_rank_docs = visualize_scores(collection_path, score_dict)
             with open(os.path.join(args.data_path, 'query_sent_scores.csv'), 'w') as scores_file:
                 for doc in top_rank_docs[:100]:
-                    scores_file.write('{} | {} | {} | {} | {}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
+                    scores_file.write('{}\t{}\t{}\t{}\t{}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
                 for doc in top_rank_docs[-100:]:
-                    scores_file.write('{} | {} | {} | {} | {}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
+                    scores_file.write('{}\t{}\t{}\t{}\t{}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
 
         if not os.path.isdir('runs'):
             os.mkdir('runs')
@@ -100,8 +97,7 @@ def main():
                                         round(b, 2), round(g, 2), map_score)
 
         elif mode == 'test':
-            topics = test_topics if not args.interactive else list(
-                q_dict.keys())
+            topics = test_topics if not args.interactive else list(q_dict.keys())
             calc_q_doc_bert(score_dict,
                             'run.' + experiment + '.cv.test.' + str(test_folder_set),
                             topics, top_doc_dict, doc_bm25_dict, topK, alpha,

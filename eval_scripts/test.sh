@@ -13,7 +13,7 @@ else
     collection="robust04_2cv"
 fi
 
-if [ ${tune_params} == "True" ] ; then
+if [ ${tune_params} ] ; then
     declare -a sents=("a" "ab" "abc")
 
     ./eval_scripts/train.qqsh ${experiment} ${num_folds} ${anserini_path}
