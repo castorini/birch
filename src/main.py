@@ -19,6 +19,9 @@ torch.manual_seed(RANDOM_SEED)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(RANDOM_SEED)
 
+import warnings
+warnings.filterwarnings('ignore')
+
 
 def main():
     args, other = get_args()
