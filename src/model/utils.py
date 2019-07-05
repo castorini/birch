@@ -45,7 +45,6 @@ def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs,
 
 
 def print_scores(scores, mode='test'):
-    print()
     print('[{}] '.format(mode), end='')
     for sn, score in zip(scores[0], scores[1]):
         print('{}: {}'.format(sn, score), end=' ')

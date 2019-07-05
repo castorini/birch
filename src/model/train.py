@@ -1,12 +1,9 @@
-import random
-
 import numpy as np
-from tqdm import tqdm
 import torch
 
-from .test import eval_select, test
+from .test import *
 from .utils import init_optimizer, load_checkpoint, print_scores, load_pretrained_model_tokenizer
-from .data import load_data
+from .data import *
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -26,16 +23,24 @@ def train(args):
                                                            device=args.device)
         last_epoch = 1
 
-    train_dataset = load_data(args.data_path, args.collection, args.batch_size, tokenizer, split='train', device=args.device)
+    train_dataset = DataGenerator(args.data_path, args.collection,
+                                  args.batch_size, tokenizer, 'train',
+                                  args.device)
+    validate_dataset = DataGenerator(args.data_path, args.collection,
+                                     args.batch_size, tokenizer, 'dev',
+                                     args.device)
+
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion,
                                args.num_train_epochs, args.batch_size)
 
     model.train()
     best_score = 0
+    step = 0
     for epoch in range(last_epoch, args.num_train_epochs + 1):
         print('Epoch: {}'.format(epoch))
         tr_loss = 0
-        for step, batch in enumerate(tqdm(train_dataset)):
+        while True:
+            batch = train_dataset.load_batch()
             if batch is None:
                 break
             tokens_tensor, segments_tensor, mask_tensor, label_tensor, _, _ = batch
@@ -46,11 +51,15 @@ def train(args):
             model.zero_grad()
 
             if args.eval_steps > 0 and step % args.eval_steps == 0:
-                print('\nStep: {}'.format(step))
-                best_score = eval_select(args, model, tokenizer, best_score, epoch)
+                print('Step: {}'.format(step))
+                best_score = eval_select(args, model, tokenizer, validate_dataset,
+                                         args.model_path,
+                                         best_score, epoch)
+            step += 1
 
         print('[train] loss: {}'.format(tr_loss))
-        best_score = eval_select(args, model, tokenizer, best_score, epoch)
+        best_score = eval_select(args, model, tokenizer, validate_dataset,
+                                 args.model_path, best_score, epoch)
 
     scores = test(args, split='test')
     print_scores(scores)
