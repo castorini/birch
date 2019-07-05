@@ -1,7 +1,7 @@
 # Birch
  
 [ ![Docker Build Status](https://img.shields.io/docker/cloud/build/osirrc2019/birch.svg)](https://hub.docker.com/r/osirrc2019/birch)
-[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3241945.svg)](https://doi.org/10.5281/zenodo.3241945)
+[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3269890.svg)](https://doi.org/10.5281/zenodo.3269890)
  
  Document ranking via sentence modeling using BERT
 
@@ -26,7 +26,7 @@ cd anserini && mvn clean package appassembler:assemble
 cd eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
 
 # Download data and models
-wget https://zenodo.org/record/3241945/files/birch_data.tar.gz
+wget https://zenodo.org/record/3269890/files/birch_data.tar.gz
 tar -xzvf birch_data.tar.gz
 ```
 
