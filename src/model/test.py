@@ -29,7 +29,7 @@ def test(args, split='test', model=None, test_dataset=None):
                                                                device=args.device)
         assert test_dataset is None
         print('Loading {} set...'.format(split))
-        test_dataset =  DataGenerator(args.data_path, args.data_name, args.batch_size, tokenizer, split, args.device)
+        test_dataset =  DataGenerator(args.data_path, '{}_{}cv'.format(args.data_name, args.cv_fold), args.batch_size, tokenizer, split, args.device)
 
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []

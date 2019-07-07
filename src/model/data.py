@@ -18,16 +18,23 @@ class DataGenerator(object):
         self.data = []
         self.lengths = []
 
-        self.fa = open(os.path.join(data_path, 'datasets/{}_all/{}/a.toks'.format(data_name, split)))
-        self.fb = open(os.path.join(data_path, 'datasets/{}_all/{}/b.toks'.format(data_name, split)))
-        self.fsim = open(os.path.join(data_path, 'datasets/{}_all/{}/sim.txt'.format(data_name, split)))
-        self.fid = open(os.path.join(data_path, 'datasets/{}_all/{}/id.txt'.format(data_name, split)))
+        if 'mb' in data_name:
+            self.fa = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'a.toks'))
+            self.fb = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'b.toks'))
+            self.fsim = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'sim.txt'))
+            self.fid = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'id.txt'))
 
-        for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
-            self.data.append([sim.replace('\n', ''), a.replace('\n', ''),
-                              b.replace('\n', ''), \
-                              ID.replace('\n', '')])
-            self.lengths.append(len(b.replace('\n', '').split()))
+            for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
+                self.data.append([sim.replace('\n', ''), a.replace('\n', ''),
+                                  b.replace('\n', ''), \
+                                  ID.replace('\n', '')])
+                self.lengths.append(len(b.replace('\n', '').split()))
+        else:
+            self.f = open(os.path.join(data_path, 'datasets', '{}.csv'.format(data_name)))
+
+            for l in self.f:
+                self.data.append([l.replace('\n', '').split('\t')])
+                self.lengths.append(len(l.replace('\n', '').split()))
 
         np.random.shuffle(self.data)
         self.data_i = 0
@@ -73,8 +80,8 @@ class DataGenerator(object):
                 break
             self.start = False
             instance = self.get_instance()
-            if self.data_name == 'robust04':
-                label, a, b, qid, docid = instance
+            if 'robust04' in self.data_name:
+                label, sim, a, b, qno, docno, qid, did = instance
                 qid = int(qid)
                 docid = int(docid)
                 qid_batch.append(qid)
