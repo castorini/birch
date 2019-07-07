@@ -22,14 +22,15 @@ def test(args, split='test', model=None, test_dataset=None):
         print('Loading model...')
         # May load local file or download from huggingface
         if args.load_trained:
-            epoch, arch, model, tokenizer, scores = load_checkpoint(args.model_path)
+            epoch, model, tokenizer, scores = load_checkpoint(args.model_path, device=args.device)
         else:
             model, tokenizer = load_pretrained_model_tokenizer(base_model=args.local_model,
                                                                base_tokenizer=args.local_tokenizer,
                                                                device=args.device)
+
         assert test_dataset is None
         print('Loading {} set...'.format(split))
-        test_dataset =  DataGenerator(args.data_path, '{}_{}cv'.format(args.data_name, args.cv_fold), args.batch_size, tokenizer, split, args.device)
+        test_dataset =  DataGenerator(args.data_path, '{}_{}cv'.format(args.collection, args.cv_fold), args.batch_size, tokenizer, split, args.device)
 
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
@@ -66,7 +67,7 @@ def test(args, split='test', model=None, test_dataset=None):
             docids = docid_tensor.cpu().detach().numpy()
             assert len(qids) == len(predicted_index)
             for p, l, s, qid, docid in zip(predicted_index, label_batch, scores, qids, docids):
-                output_file.write('{} Q0 {} {} {} bert {}\n'.format(qid, docid, line_no, s[1], l))
+                predict_file.write('{} Q0 {} {} {} bert {}\n'.format(qid, docid, line_no, s[1], l))
                 line_no += 1
         else:
             if qid_tensor is None:

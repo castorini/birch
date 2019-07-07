@@ -16,7 +16,6 @@ class DataGenerator(object):
     def __init__(self, data_path, data_name, batch_size, tokenizer, split, device='cuda'):
         super(DataGenerator, self).__init__()
         self.data = []
-        self.lengths = []
 
         if 'mb' in data_name:
             self.fa = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'a.toks'))
@@ -28,13 +27,11 @@ class DataGenerator(object):
                 self.data.append([sim.replace('\n', ''), a.replace('\n', ''),
                                   b.replace('\n', ''), \
                                   ID.replace('\n', '')])
-                self.lengths.append(len(b.replace('\n', '').split()))
         else:
             self.f = open(os.path.join(data_path, 'datasets', '{}.csv'.format(data_name)))
 
             for l in self.f:
-                self.data.append([l.replace('\n', '').split('\t')])
-                self.lengths.append(len(l.replace('\n', '').split()))
+                self.data.append(l.replace('\n', '').split('\t'))
 
         np.random.shuffle(self.data)
         self.data_i = 0
@@ -81,7 +78,7 @@ class DataGenerator(object):
             self.start = False
             instance = self.get_instance()
             if 'robust04' in self.data_name:
-                label, sim, a, b, qno, docno, qid, did = instance
+                label, sim, a, b, qno, docno, qid, docid = instance
                 qid = int(qid)
                 docid = int(docid)
                 qid_batch.append(qid)
