@@ -30,7 +30,7 @@ def test(args, split='test', model=None, test_dataset=None):
 
         assert test_dataset is None
         print('Loading {} set...'.format(split))
-        test_dataset =  DataGenerator(args.data_path, '{}_{}cv'.format(args.collection, args.cv_fold), args.batch_size, tokenizer, split, args.device)
+        test_dataset = DataGenerator(args.data_path, '{}_{}cv'.format(args.collection, args.cv_fold), args.batch_size, tokenizer, split, args.device)
 
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
@@ -62,21 +62,13 @@ def test(args, split='test', model=None, test_dataset=None):
                 output_file.write('{}\t{}\n'.format(line_no, p))
                 predict_file.write('{} Q0 {} {} {} bert\n'.format(qid, docid, line_no, s[1]))
                 line_no += 1
-        elif args.collection == 'robust04':
+        else:  # robust04 or core17
             qids = qid_tensor.cpu().detach().numpy()
             docids = docid_tensor.cpu().detach().numpy()
             assert len(qids) == len(predicted_index)
             for p, l, s, qid, docid in zip(predicted_index, label_batch, scores, qids, docids):
-                predict_file.write('{} Q0 {} {} {} bert {}\n'.format(qid, docid, line_no, s[1], l))
+                predict_file.write('{} Q0 {} {} {} bert\n'.format(qid, docid, line_no, s[1]))
                 line_no += 1
-        else:
-            if qid_tensor is None:
-                qids = list(range(line_no, line_no + len(label_batch)))
-            else:
-                qids = qid_tensor.cpu().detach().numpy()
-            assert len(qids) == len(predicted_index)
-            for qid, p, l in zip(qids, predicted_index, label_batch):
-                output_file.write('{},{},{}\n'.format(qid, p, l))
 
         label_new = label_new if len(label_new) > 0 else label_batch
         predicted_index_new = predicted_index_new if len(predicted_index_new) > 0 else predicted_index

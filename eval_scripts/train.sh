@@ -22,7 +22,7 @@ do
     cat "log/${experiment}/eval${i}a.txt" | sort -k5r,5 -k3,3 | head -1 > "log/${experiment}/${i}a_best.txt"
     rm "runs/run.${experiment}.cv.train"
 
-    python src/main.py --mode retrieval --experiment ${experiment} --collection ${collection} --folds_file ${folds_file} --anserini_path ${anserini_path} --data_path data 3 1.0 1.0 0.1 ${i} train > "log/${experiment}/eval${i}ab.txt"
+    python src/main.py --mode retrieval --experiment ${experiment} --collection ${collection} --folds_file ${folds_file} --anserini_path ${anserini_path} --data_path data 3 1.0 1.0 0.1 $i train > "log/${experiment}/eval${i}ab.txt"
     cat "log/${experiment}/eval${i}ab.txt" | sort -k5r,5 -k3,3 | head -1 > "log/${experiment}/${i}ab_best.txt"
     rm "runs/run.${experiment}.cv.train"
 

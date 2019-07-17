@@ -77,7 +77,7 @@ class DataGenerator(object):
                 break
             self.start = False
             instance = self.get_instance()
-            if 'robust04' in self.data_name:
+            if 'robust04' or 'core' in self.data_name:
                 label, sim, a, b, qno, docno, qid, docid = instance
                 qid = int(qid)
                 docid = int(docid)
