@@ -27,7 +27,12 @@ class DataGenerator(object):
                 self.data.append([sim.replace('\n', ''), a.replace('\n', ''),
                                   b.replace('\n', ''), \
                                   ID.replace('\n', '')])
-        else:
+        elif 'msmarco' in data_name:
+            self.f = open(os.path.join(data_path, 'datasets', '{}_{}.tsv'.format(data_name, split)))
+
+            for l in self.f:
+                self.data.append(l.replace('\n', '').split('\t'))
+        else:  # Robust04 or Core*
             self.f = open(os.path.join(data_path, 'datasets', '{}.csv'.format(data_name)))
 
             for l in self.f:
