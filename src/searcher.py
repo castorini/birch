@@ -35,11 +35,8 @@ class Searcher:
         return searcher
 
     def search_document(self, searcher, qid2docid, qid2text, output_fn, collection='robust04', K=1000, topics=None, cv_fold=None):
-        output_dir = os.path.dirname(output_fn)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
         with open(output_fn, 'w', encoding="utf-8") as out:
-            if 'core' in collection:
+            if 'core' or 'msmarco' in collection:
                 # Robust04 provides CV topics
                 topics = qid2text
             for qid in topics:
@@ -48,7 +45,10 @@ class Searcher:
                 for i in range(len(hits)):
                     sim = hits[i].score
                     docno = hits[i].docid
-                    label = 1 if qid in qid2docid and docno in qid2docid[qid] else 0
+                    if qid2docid is None:
+                        label = 0
+                    else:
+                        label = 1 if qid in qid2docid and docno in qid2docid[qid] else 0
                     content = hits[i].content
                     if collection == 'core18':
                         content_json = json.loads(content)
@@ -56,8 +56,11 @@ class Searcher:
                         for each in content_json['contents']:
                             if each is not None and 'content' in each.keys():
                                 content += '{}\n'.format(each['content'])
-                    if collection == 'robust04':
+                    elif collection == 'robust04' or collection == 'msmarco':
                         content = parse_doc_from_index(content)
+                        # print(content)
+                        # print('---')
+                        # break
                     clean_content = clean_html(content, collection=collection)
                     tokenized_content = tokenizer.tokenize(clean_content)
                     sentid = 0
@@ -67,7 +70,7 @@ class Searcher:
                             seq_list = chunk_sent(sent, MAX_INPUT_LENGTH)
                             for seq in seq_list:
                                 sentno = docno + '_' + str(sentid)
-                                if cv_fold == '5': 
+                                if cv_fold == '5':
                                     out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, seq, qid, sentno, qid, self.didx-1))
                                 else:
                                     out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 16), text, seq, qid, sentno, self.qidx, self.didx))
@@ -76,7 +79,7 @@ class Searcher:
                                 self.didx += 1
                         else:
                             sentno = docno + '_' + str(sentid)
-                            if cv_fold == '5': 
+                            if cv_fold == '5':
                                 out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, sent, qid, sentno, qid, self.didx-1))
                             else:
                                 out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 16), text, sent, qid, sentno, self.qidx, self.didx))
@@ -86,10 +89,6 @@ class Searcher:
                 self.qidx += 1
 
     def search_query(self, searcher, query, output_fn, collection='robust04', K=1000):
-        output_dir = os.path.dirname(output_fn)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
         with open(output_fn, 'w', encoding="utf-8") as out:
             sentid2text = {}
             hits = searcher.search(self.JString(query), K)

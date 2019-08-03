@@ -1,5 +1,6 @@
 from utils import *
 from searcher import *
+from args import get_args
 
 if __name__ == '__main__':
     args, _ = get_args()
