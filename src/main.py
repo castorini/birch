@@ -39,8 +39,10 @@ def main():
         scores = test(args)
         print_scores(scores)
     else:
-        folds_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
-        qrels_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', args.qrels_file)
+        folds_path = os.path.join(args.data_path, 'trec_dl', args.folds_file) if 'msmarco' in args.collection \
+            else os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
+        qrels_path = os.path.join(args.data_path, 'trec_dl', args.qrels_file) if 'msmarco' in args.collection \
+                else os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', args.qrels_file)
 
         topK = int(other[0])
         alpha = float(other[1])
@@ -60,11 +62,17 @@ def main():
             else:
                 test_topics.extend(folds[i])
 
+        assert len(all_topics) == 200
+
         if args.interactive:
             sentid2text = query_sents(args)
             test(args)  # inference over each sentence
 
-        collection_path = os.path.join(datasets_path, args.collection + '.csv') if not args.interactive else args.interactive_path
+        if args.interactive:
+            collection_path = args.interactive_path
+        else:
+            collection_path = os.path.join(args.data_path, 'trec_dl', args.collection + '.tsv') if 'msmarco' in args.collection \
+                else os.path.join(datasets_path, args.collection + '.csv')
         predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment) if not args.interactive else os.path.join(args.data_path, 'predictions', args.predict_path)
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
@@ -95,9 +103,8 @@ def main():
                         with open('eval.base', 'r') as f:
                             for line in f:
                                 metric, qid, score = line.split('\t')
-                                map_score = float(score)
-                                print(test_folder_set, round(a, 2),
-                                        round(b, 2), round(g, 2), map_score)
+                                score = float(score)
+                                print(test_folder_set, round(a, 2), round(b, 2), round(g, 2), score, flush=True)
 
         elif mode == 'test':
             topics = test_topics if not args.interactive else list(q_dict.keys())
@@ -108,6 +115,18 @@ def main():
         else:
             topics = all_topics if not args.interactive else list(
                 q_dict.keys())
+            # Grid search for best parameters
+            # for a in np.arange(0.3, alpha, 0.1):
+            #     for b in np.arange(0.0, beta, 0.1):
+            #         for g in np.arange(0.0, gamma, 0.1):
+            #             calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics, top_doc_dict, doc_bm25_dict, topK, a, b, g)
+            #             base = 'runs/run.' + experiment + '.cv.all'
+            #             os.system('{}/eval/trec_eval.9.0.4/trec_eval -m map {} {}> eval.base'.format(anserini_path, qrels_path, base))
+            #             with open('eval.base', 'r') as f:
+            #                 for line in f:
+            #                     metric, qid, score = line.split('\t')
+            #                     score = float(score)
+            #                     print(round(a, 2), round(b, 2), round(g, 2), score, flush=True)
             calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
                             top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 

@@ -45,28 +45,30 @@ def load_bert_scores(pred_file, query_dict, sent_dict):
     return score_dict
 
 
-def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
+def calc_q_doc_bert(score_dict, run_path, topics, top_doc_dict, bm25_dict,
                     topKSent, alpha, beta, gamma):
-    run_file = open(os.path.join('runs', run_file), "w")
-    for q in topics:
-        doc_score_dict = {}
-        for d in top_doc_dict[q]:
-            # print(d)
-            scores = score_dict[q][d]
-            scores.sort(reverse=True)
-            # print(scores)
-            sum_score = 0
-            score_list = []
-            weight_list = [1, beta, gamma]
-            for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
-                score_list.append(s)
-                sum_score += s * w
-            doc_score_dict[d] = alpha * bm25_dict[q][d] + (1.0 - alpha) * sum_score
+    with open(os.path.join('runs', run_path), "w") as run_file:
+        for q in topics:
+            doc_score_dict = {}
+            for d in top_doc_dict[q]:
+                try:
+                    scores = score_dict[q][d]
+                except:
+                    print('{} {}'.format(q, d))
+                    continue
+                scores.sort(reverse=True)
+                # print(scores)
+                sum_score = 0
+                score_list = []
+                weight_list = [1, beta, gamma]
+                for s, w in zip(scores[:topKSent], weight_list[:topKSent]):
+                    score_list.append(s)
+                    sum_score += s * w
+                doc_score_dict[d] = alpha * bm25_dict[q][d] + (1.0 - alpha) * sum_score
 
-        doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
-        rank = 1
-        for doc, score in doc_score_dict:
-            run_file.write("{} Q0 {} {} {} BERT\n".format(q, doc, rank, score))
-            rank += 1
-
-    run_file.close()
+            doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
+            rank = 1
+            for doc, score in doc_score_dict:
+                run_file.write("{} Q0 {} {} {} BERT\n".format(q, doc, rank, score))
+                run_file.flush()
+                rank += 1
