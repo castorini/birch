@@ -15,7 +15,7 @@ if torch.cuda.is_available():
 
 def train(args):
     if args.load_trained:
-        last_epoch, arch, model, tokenizer, scores = load_checkpoint(args.model_path)
+        last_epoch, model, tokenizer, scores = load_checkpoint(args.model_path)
     else:
         # May load local file or download from huggingface
         model, tokenizer = load_pretrained_model_tokenizer(base_model=args.local_model,

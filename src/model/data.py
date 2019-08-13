@@ -39,6 +39,7 @@ class DataGenerator(object):
                 self.data.append(l.replace('\n', '').split('\t'))
 
         np.random.shuffle(self.data)
+        self.split = split
         self.data_i = 0
         self.data_size = len(self.data)
         self.data_name = data_name
@@ -82,7 +83,7 @@ class DataGenerator(object):
                 break
             self.start = False
             instance = self.get_instance()
-            if 'robust04' in self.data_name or 'core' in self.data_name:
+            if 'robust04' in self.data_name or 'core' in self.data_name or (self.split == 'test' and 'msmarco' in self.data_name):
                 label, sim, a, b, qno, docno, qid, docid = instance
                 qid = int(qid)
                 docid = int(docid)
@@ -91,12 +92,16 @@ class DataGenerator(object):
             else:
                 label, a, b, ID = instance
                 ls = ID.split()
-                if len(ls) > 1:
+                if len(ls) == 1:
+                    qid = ID
+                elif len(ls) == 2:
+                    qid, docid = ls
+                    docid = int(docid[1:])  # remove D from msmarco
+                    docid_batch.append(docid)
+                else:
                     qid, _, docid, _, _, _ = ls
                     docid = int(docid)
                     docid_batch.append(docid)
-                else:
-                    qid = ID
                 qid_batch.append(int(qid))
             combine_index, segments_ids = self.tokenize_two(a, b)
             test_batch.append(torch.tensor(combine_index))

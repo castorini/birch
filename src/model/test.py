@@ -51,12 +51,12 @@ def test(args, split='test', model=None, test_dataset=None):
         label_batch = list(label_tensor.cpu().detach().numpy())
         label_new = []
         predicted_index_new = []
-        if args.collection == 'mb':
+        if args.collection == 'mb' or 'msmarco' in args.collection:
             qids = qid_tensor.cpu().detach().numpy()
-            if docid_tensor is not None:
-                docids = docid_tensor.cpu().detach().numpy()
-            else:
+            if len(docid_tensor.size()) == 0 or docid_tensor is None:
                 docids = list(range(line_no, line_no + len(label_batch)))
+            else:
+                docids = docid_tensor.cpu().detach().numpy()
             for p, qid, docid, s, label in zip(predicted_index, qids, docids, \
                                                scores, label_batch):
                 output_file.write('{}\t{}\n'.format(line_no, p))
