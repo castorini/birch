@@ -10,8 +10,6 @@ tune_params=$7
 
 declare -a sents=("a" "ab" "abc")
 
-./eval_scripts/train.sh ${experiment} ${num_folds} ${anserini_path}
-
 for i in "${sents[@]}"
 do
     for j in $(seq 0 $((num_folds - 1)))
