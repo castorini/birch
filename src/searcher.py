@@ -58,9 +58,6 @@ class Searcher:
                                 content += '{}\n'.format(each['content'])
                     elif collection == 'robust04' or collection == 'msmarco':
                         content = parse_doc_from_index(content)
-                        # print(content)
-                        # print('---')
-                        # break
                     clean_content = clean_html(content, collection=collection)
                     tokenized_content = tokenizer.tokenize(clean_content)
                     sentid = 0
@@ -87,6 +84,7 @@ class Searcher:
                             sentid += 1
                             self.didx += 1
                 self.qidx += 1
+
 
     def search_query(self, searcher, query, output_fn, collection='robust04', K=1000):
         with open(output_fn, 'w', encoding="utf-8") as out:
