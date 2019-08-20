@@ -7,7 +7,7 @@ def get_args():
     parser.add_argument('--output_path', default='out.tmp', help='Name of log file')
     parser.add_argument('--data_path', default='data')
     parser.add_argument('--qrels_file', default='qrels.robust2004.txt', help='[qrels.microblog.txt, qrels.robust2004.txt]')
-    parser.add_argument('--collection', default='robust04', help='[mb, msmarco, robust04, core17, core18]')
+    parser.add_argument('--collection', default='robust04', help='[mb, msmarco_top1000_dev, msmarco_expanded_top1000_dev, robust04, core17, core18]')
 
     # Interactive
     parser.add_argument('--interactive', action='store_true', default=False, help='Batch evaluation if not set')
