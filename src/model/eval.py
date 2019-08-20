@@ -4,18 +4,13 @@ import shlex
 
 
 def evaluate(trec_eval_path, predictions_file, qrels_file):
-    # TODO: add metrics args
-    cmd = trec_eval_path + ' {judgement} {output} -m map -m recip_rank -m P.30'.format(
-        judgement=qrels_file, output=predictions_file)
+    cmd = trec_eval_path + ' {judgement} {output} -m map -m P.20 -m ndcg_cut.20'.format(judgement=qrels_file, output=predictions_file)
     pargs = shlex.split(cmd)
     print('Running {}'.format(cmd))
     p = subprocess.Popen(pargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pout, perr = p.communicate()
 
-    if sys.version_info[0] < 3:
-        lines = pout.split(b'\n')
-    else:
-        lines = pout.split(b'\n')
+    lines = pout.split(b'\n')
 
     map = float(lines[0].strip().split()[-1])
     mrr = float(lines[1].strip().split()[-1])

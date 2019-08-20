@@ -23,12 +23,10 @@ def train(args):
                                                            device=args.device)
         last_epoch = 1
 
-    train_dataset = DataGenerator(args.data_path, args.collection,
-                                  args.batch_size, tokenizer, 'train',
-                                  args.device)
-    validate_dataset = DataGenerator(args.data_path, args.collection,
-                                     args.batch_size, tokenizer, 'dev',
-                                     args.device)
+    train_dataset = DataGenerator(args.data_path, args.collection, args.batch_size,
+                                  tokenizer, 'train',  args.device)
+    validate_dataset = DataGenerator(args.data_path, args.collection, args.batch_size,
+                                     tokenizer, 'dev', args.device)
 
     optimizer = init_optimizer(model, args.learning_rate, args.warmup_proportion,
                                args.num_train_epochs, args.batch_size)

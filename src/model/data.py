@@ -18,15 +18,14 @@ class DataGenerator(object):
         self.data = []
 
         if 'mb' in data_name:
-            self.fa = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'a.toks'))
-            self.fb = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'b.toks'))
-            self.fsim = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'sim.txt'))
-            self.fid = open(os.path.join(data_path, 'datasets', '{}_all'.format(data_name), split, 'id.txt'))
+            self.fa = open(os.path.join(data_path, 'datasets', '{}/{}/a.toks'.format(data_name, split)))
+            self.fb = open(os.path.join(data_path, 'datasets', '{}/{}/b.toks'.format(data_name, split)))
+            self.fsim = open(os.path.join(data_path, 'datasets', '{}/{}/sim.txt'.format(data_name, split)))
+            self.fid = open(os.path.join(data_path, 'datasets', '{}/{}/id.txt'.format(data_name, split)))
 
             for a, b, sim, ID in zip(self.fa, self.fb, self.fsim, self.fid):
                 self.data.append([sim.replace('\n', ''), a.replace('\n', ''),
-                                  b.replace('\n', ''), \
-                                  ID.replace('\n', '')])
+                                  b.replace('\n', ''), ID.replace('\n', '')])
         else:
             self.f = open(os.path.join(data_path, 'datasets', '{}.csv'.format(data_name)))
 
@@ -100,21 +99,12 @@ class DataGenerator(object):
             label_batch.append(int(label))
             if len(test_batch) >= self.batch_size or self.epoch_end():
                 # Convert inputs to PyTorch tensors
-                tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch,
-                                                                batch_first=True,
-                                                                padding_value=0).to(
-                    self.device)
-                segments_tensor = torch.nn.utils.rnn.pad_sequence(
-                    token_type_ids_batch, batch_first=True,
-                    padding_value=0).to(self.device)
-                mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch,
-                                                              batch_first=True,
-                                                              padding_value=0).to(
-                    self.device)
+                tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(self.device)
+                segments_tensor = torch.nn.utils.rnn.pad_sequence(token_type_ids_batch, batch_first=True, padding_value=0).to(self.device)
+                mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(self.device)
                 label_tensor = torch.tensor(label_batch, device=self.device)
                 qid_tensor = torch.tensor(qid_batch, device=self.device)
                 docid_tensor = torch.tensor(docid_batch, device=self.device)
-                return (tokens_tensor, segments_tensor, mask_tensor,
-                        label_tensor, qid_tensor, docid_tensor)
+                return (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
 
         return None
