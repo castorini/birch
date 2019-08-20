@@ -51,10 +51,8 @@ def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
     for q in topics:
         doc_score_dict = {}
         for d in top_doc_dict[q]:
-            # print(d)
             scores = score_dict[q][d]
             scores.sort(reverse=True)
-            # print(scores)
             sum_score = 0
             score_list = []
             weight_list = [1, beta, gamma]

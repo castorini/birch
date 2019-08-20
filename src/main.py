@@ -8,9 +8,7 @@ import torch
 from eval_bert import eval_bm25, load_bert_scores, calc_q_doc_bert
 from model.train import train
 from model.test import test
-from model.utils import print_scores
 from args import get_args
-from query import query_sents, visualize_scores
 
 RANDOM_SEED = 12345
 random.seed(RANDOM_SEED)
@@ -30,17 +28,15 @@ def main():
     anserini_path = args.anserini_path
     datasets_path = os.path.join(args.data_path, 'datasets')
 
-    if not os.path.isdir('log'):
-        os.mkdir('log')
-
     if args.mode == 'training':
         train(args)
     elif args.mode == 'inference':
-        scores = test(args)
-        print_scores(scores)
+        test(args)
     else:
-        folds_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'fine_tuning', args.folds_file)
-        qrels_path = os.path.join(anserini_path, 'src', 'main', 'resources', 'topics-and-qrels', args.qrels_file)
+        from query import query_sents, visualize_scores
+
+        folds_path = os.path.join(args.data_path, 'folds', '{}-folds.json'.format(args.collection))
+        qrels_path = os.path.join(args.data_path, 'qrels', 'qrels.{}.txt'.format(args.collection))
 
         topK = int(other[0])
         alpha = float(other[1])
@@ -64,7 +60,7 @@ def main():
             sentid2text = query_sents(args)
             test(args)  # inference over each sentence
 
-        collection_path = os.path.join(datasets_path, args.collection + '.csv') if not args.interactive else args.interactive_path
+        collection_path = os.path.join(datasets_path, '{}_{}cv.csv'.format(args.collection, args.cv_fold)) if not args.interactive else args.interactive_path
         predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment) if not args.interactive else os.path.join(args.data_path, 'predictions', args.predict_path)
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
@@ -82,7 +78,10 @@ def main():
             os.mkdir('runs')
 
         if mode == 'train':
-            topics = train_topics if not args.interactive else list(q_dict.keys())
+            if args.collection == 'robust04':
+                topics = train_topics if not args.interactive else list(q_dict.keys())
+            else:
+                topics = all_topics
             # Grid search for best parameters
             for a in np.arange(0.0, alpha, 0.1):
                 for b in np.arange(0.0, beta, 0.1):
@@ -105,11 +104,6 @@ def main():
                             'run.' + experiment + '.cv.test.' + str(test_folder_set),
                             topics, top_doc_dict, doc_bm25_dict, topK, alpha,
                             beta, gamma)
-        else:
-            topics = all_topics if not args.interactive else list(
-                q_dict.keys())
-            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.all', topics,
-                            top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
 
 if __name__ == "__main__":

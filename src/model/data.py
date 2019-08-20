@@ -32,7 +32,8 @@ class DataGenerator(object):
             for l in self.f:
                 self.data.append(l.replace('\n', '').split('\t'))
 
-        np.random.shuffle(self.data)
+        if split != 'test':
+            np.random.shuffle(self.data)
         self.data_i = 0
         self.data_size = len(self.data)
         self.data_name = data_name

@@ -51,8 +51,7 @@ def train(args):
             if args.eval_steps > 0 and step % args.eval_steps == 0:
                 print('Step: {}'.format(step))
                 best_score = eval_select(args, model, tokenizer, validate_dataset,
-                                         args.model_path,
-                                         best_score, epoch)
+                                         args.model_path, best_score, epoch)
             step += 1
 
         print('[train] loss: {}'.format(tr_loss))

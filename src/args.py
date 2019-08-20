@@ -6,7 +6,6 @@ def get_args():
     parser.add_argument('--mode', default='retrieval', help='[training, inference, retrieval]')
     parser.add_argument('--output_path', default='out.tmp', help='Name of log file')
     parser.add_argument('--data_path', default='data')
-    parser.add_argument('--qrels_file', default='qrels.robust2004.txt', help='[qrels.microblog.txt, qrels.robust2004.txt]')
     parser.add_argument('--collection', default='robust04', help='[mb, robust04, core17, core18]')
 
     # Interactive
@@ -18,7 +17,6 @@ def get_args():
     parser.add_argument('--experiment', default='base_mb_robust04', help='Experiment name for logging')
     parser.add_argument('--anserini_path', default='../Anserini', help='Path to Anserini root')
     parser.add_argument('--index_path', default='lucene-index.robust04.pos+docvectors+rawdocs', help='Path to Lucene index')
-    parser.add_argument('--folds_file', default='robust04-paper2-folds.json', help='Path to Robust04 folds')
     parser.add_argument('--cv_fold', default=5)
 
     # Training

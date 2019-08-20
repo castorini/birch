@@ -13,7 +13,7 @@ def evaluate(trec_eval_path, predictions_file, qrels_file):
     lines = pout.split(b'\n')
 
     map = float(lines[0].strip().split()[-1])
-    mrr = float(lines[1].strip().split()[-1])
-    p30 = float(lines[2].strip().split()[-1])
+    p20 = float(lines[1].strip().split()[-1])
+    ndcg20 = float(lines[2].strip().split()[-1])
 
-    return map, mrr, p30
+    return map, p20, ndcg20

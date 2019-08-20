@@ -62,13 +62,14 @@ def test(args, split='test', model=None, test_dataset=None):
                 output_file.write('{}\t{}\n'.format(line_no, p))
                 predict_file.write('{} Q0 {} {} {} bert\n'.format(qid, docid, line_no, s[1]))
                 line_no += 1
-        else:  # robust04 or core17
+        else:  # robust04 or core17/18
             qids = qid_tensor.cpu().detach().numpy()
             docids = docid_tensor.cpu().detach().numpy()
             assert len(qids) == len(predicted_index)
             for p, l, s, qid, docid in zip(predicted_index, label_batch, scores, qids, docids):
                 predict_file.write('{} Q0 {} {} {} bert\n'.format(qid, docid, line_no, s[1]))
                 line_no += 1
+        predict_file.flush()
 
         label_new = label_new if len(label_new) > 0 else label_batch
         predicted_index_new = predicted_index_new if len(predicted_index_new) > 0 else predicted_index
@@ -81,7 +82,6 @@ def test(args, split='test', model=None, test_dataset=None):
     torch.cuda.empty_cache()
     model.train()
 
-    map, mrr, p30 = evaluate(args.trec_eval_path, predictions_file=args.predict_path, \
-                                  qrels_file=os.path.join(args.data_path,
-                                                          args.qrels_file))
-    return [['map', 'mrr', 'p30'], [map, mrr, p30]]
+    map, p20, ndcg20 = evaluate(args.trec_eval_path, predictions_file=args.predict_path, \
+                            qrels_file=os.path.join(args.data_path, 'qrels', args.qrels_file))
+    return [['map', 'p20', 'ndcg20'], [map, p20, ndcg20]]
