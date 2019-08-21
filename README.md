@@ -28,9 +28,8 @@ cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-op
 git clone https://github.com/castorini/anserini.git
 cd anserini && mvn clean package appassembler:assemble
 cd eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
-s
-# Download data and models
 
+# Download data and models
 cd data
 wget https://zenodo.org/record/3372764/files/emnlp_bert4ir.tar.gz
 tar -xzvf emnlp_bert4ir.tar.gz
