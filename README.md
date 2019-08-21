@@ -1,6 +1,6 @@
 # Birch
  
-[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3372764.svg)](https://doi.org/10.5281/zenodo.3372764)
+[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3372764.svg)](http://doi.org/10.5281/zenodo.3372764)
  
 Document ranking via sentence modeling using BERT
 
