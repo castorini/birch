@@ -83,5 +83,5 @@ def test(args, split='test', model=None, test_dataset=None):
     model.train()
 
     map, p20, ndcg20 = evaluate(args.trec_eval_path, predictions_file=args.predict_path, \
-                            qrels_file=os.path.join(args.data_path, 'qrels', args.qrels_file))
+                            qrels_file=os.path.join(args.data_path, 'qrels', 'qrels.{}.txt'.format(args.collection)))
     return [['map', 'p20', 'ndcg20'], [map, p20, ndcg20]]

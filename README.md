@@ -1,6 +1,6 @@
 # Birch
  
-[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3372764.svg)](http://doi.org/10.5281/zenodo.3372764)
+[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3372764.svg)](https://doi.org/10.5281/zenodo.3372764)
  
 Document ranking via sentence modeling using BERT
 
@@ -50,11 +50,11 @@ For BERT(MB):
 ```
 export CUDA_VISIBLE_DEVICES=0; experiment=${experiment}; \
 nohup python -u src/main.py --mode training --experiment ${experiment} --collection mb \
---local_model <models/bert-large-uncased.tar.gz> \
+--local_model models/bert-large-uncased.tar.gz \
 --local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
 --data_path data --predict_path data/predictions/predict.${experiment} \
 --model_path models/saved.${experiment} --eval_steps 1000 --qrels_file qrels.microblog.txt \
---device cuda --output_path logs/out.${experiment} --qrels_file qrels.microblog.txt > logs/${experiment}.log 2>&1 &
+--device cuda --output_path logs/out.${experiment} > logs/${experiment}.log 2>&1 &
 ```
 
 For BERT(CAR -> MB) and BERT(MS MARCO -> MB):
@@ -66,7 +66,7 @@ nohup python -u src/main.py --mode training --experiment ${experiment} --collect
 --local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
 --data_path data --predict_path data/predictions/predict.${experiment} \
 --model_path models/saved.${experiment} --eval_steps 1000 --qrels_file qrels.microblog.txt \
---device cuda --output_path logs/out.${experiment} --qrels_file qrels.microblog.txt > logs/${experiment}.log 2>&1 &
+--device cuda --output_path logs/out.${experiment} > logs/${experiment}.log 2>&1 &
 ```
 
 ## Inference
