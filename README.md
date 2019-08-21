@@ -1,9 +1,13 @@
 # Birch
  
-[ ![Docker Build Status](https://img.shields.io/docker/cloud/build/osirrc2019/birch.svg)](https://hub.docker.com/r/osirrc2019/birch)
-[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3269890.svg)](https://doi.org/10.5281/zenodo.3269890)
+[ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3372764.svg)](http://doi.org/10.5281/zenodo.3372764)
  
- Document ranking via sentence modeling using BERT
+Document ranking via sentence modeling using BERT
+
+Note: 
+The results in the arXiv paper [Simple Applications of BERT for Ad Hoc Document Retrieval](https://arxiv.org/abs/1903.10972) have been superseded by the results in the EMNLP'19 paper [Cross-Domain Modeling of Sentence-Level Evidence
+for Document Retrieval].
+To reproduce the results in the arXiv paper, please follow the instructions [here](https://github.com/castorini/birch/blob/master/reproduce_arxiv.md) instead.
 
 ## Environment & Data
 
@@ -18,36 +22,74 @@ pip install Cython  # jnius dependency
 pip install -r requirements.txt
 
 git clone https://github.com/NVIDIA/apex
-cd apex && pip install -v --no-cache-dir . && cd ..
+cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
-# Set up Anserini
+# Set up Anserini (last reproduced with commit id: f690b5b769d7b0a623e034b31438df126d81b791)
 git clone https://github.com/castorini/anserini.git
 cd anserini && mvn clean package appassembler:assemble
 cd eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
 
 # Download data and models
-wget https://zenodo.org/record/3269890/files/birch_data.tar.gz
-tar -xzvf birch_data.tar.gz
+cd data
+wget https://zenodo.org/record/3372764/files/emnlp_bert4ir.tar.gz
+tar -xzvf emnlp_bert4ir.tar.gz
+cd ..
 ```
 
-## Dataset
-
-```
-python src/robust04_cv.py --anserini_path <path/to/anserini> --index_path <path/to/index> --cv_fold <2, 5>
-```
-
-This step retrieves documents to depth 1000 for each query, and splits them into sentences to generate folds data. You may skip to the next step and and use the downloaded data under `data/datasets`.
+Experiment Names:
+- large_mb_robust04, large_mb_core17, large_mb_core18
+- large_car_mb_robust04, large_car_mb_core17, large_car_mb_core18
+- large_msmarco_mb_robust04, large_msmarco_mb_core17, large_msmarco_mb_core18
+- large_car_robust04, large_car_core17, large_car_core18
+- large_msmarco_robust04, large_msmarco_core17, large_msmarco_core18
 
 ## Training
 
+For BERT(MB):
+
 ```
-python src/main.py --mode training --collection mb --qrels_file qrels.microblog.txt --batch_size <batch_size> --eval_steps <eval_steps> --learning_rate <learning_rate> --num_train_epochs <num_train_epochs> --device cuda
+export CUDA_VISIBLE_DEVICES=0; experiment=${experiment}; \
+nohup python -u src/main.py --mode training --experiment ${experiment} --collection mb \
+--local_model <models/bert-large-uncased.tar.gz> \
+--local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
+--data_path data --predict_path data/predictions/predict.${experiment} \
+--model_path models/saved.${experiment} --eval_steps 1000 --qrels_file qrels.microblog.txt \
+--device cuda --output_path logs/out.${experiment} --qrels_file qrels.microblog.txt > logs/${experiment}.log 2>&1 &
+```
+
+For BERT(CAR -> MB) and BERT(MS MARCO -> MB):
+
+```
+export CUDA_VISIBLE_DEVICES=0; experiment=${experiment}; \
+nohup python -u src/main.py --mode training --experiment ${experiment} --collection mb \
+--local_model <models/pytorch_msmarco.tar.gz, models/pytorch_car.tar.gz> \
+--local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
+--data_path data --predict_path data/predictions/predict.${experiment} \
+--model_path models/saved.${experiment} --eval_steps 1000 --qrels_file qrels.microblog.txt \
+--device cuda --output_path logs/out.${experiment} --qrels_file qrels.microblog.txt > logs/${experiment}.log 2>&1 &
 ```
 
 ## Inference
 
+For BERT(MB), BERT(CAR -> MB) and BERT(MS MARCO -> MB):
+
 ```
-python src/main.py --mode inference --experiment <qa_2cv, mb_2cv, qa_5cv, mb_5cv> --collection <robust04_2cv, robust04_5cv> --model_path <models/saved.mb_3, models/saved.qa_2> --load_trained --batch_size <batch_size> --device cuda
+export CUDA_VISIBLE_DEVICES=0; experiment=<experiment_name>; \
+nohup python -u src/main.py --mode inference --experiment ${experiment} --collection <robust04, core17, core18> \
+--load_trained --model_path <models/saved.large_mb_2, models/saved.car_mb_1, models/saved.msmarco_mb_2> \
+--batch_size 4 --data_path data --predict_path data/predictions/predict.${experiment} \
+--device cuda --output_path logs/out.${experiment} > logs/${experiment}.log 2>&1 &
+```
+
+For BERT(CAR) and BERT(MS MARCO):
+
+```
+export CUDA_VISIBLE_DEVICES=0; experiment=<experiment_name; \
+nohup python -u src/main.py --mode inference --experiment ${experiment} --collection <robust04, core17, core18> \
+--local_model <models/pytorch_msmarco.tar.gz, models/pytorch_car.tar.gz> \
+--local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 4 \
+--data_path data --predict_path data/predictions/predict.${experiment} \
+--device cuda --output_path logs/out.${experiment} > logs/${experiment}.log 2>&1 &
 ```
 
 Note that this step takes a long time. 
@@ -55,75 +97,18 @@ If you don't want to evaluate the pretrained models, you may skip to the next st
 
 ## Evaluation
 
-### BM25+RM3:
-
 ```
-./eval_scripts/baseline.sh <path/to/anserini> <path/to/index> <2, 5>
-```
+experiment=<experiment_name>
+collection=<robust04, core17, core18>
+anserini_path=<path/to/anserini/root>
+data_path=<path/to/data/root>
 
-### Sentence Evidence:
+# Tune hyperparameters
+./eval_scripts/train.sh ${experiment} ${collection} ${anserini_path}
 
-- Compute document score
+# Run experiment
+./eval_scripts/test.sh #{experiment} ${collection} ${anserini_path}
 
-Set the last argument to True if you want to tune the hyperparameters first.
-To use the default hyperparameters, set to False.
-
-```
-./eval_scripts/test.sh <qa_2cv, mb_2cv, qa_5cv, mb_5cv> <2, 5> <path/to/anserini> <True, False>
-```
-
-- Evaluate with trec_eval
-
-```
-./eval_scripts/eval.sh <bm25+rm3_2cv, qa_2cv, mb_2cv, bm25+rm3_5cv, qa_5cv, mb_5cv> <path/to/anserini> qrels.robust2004.txt
-```
-
-
----
-
-## Result on Robust04
- 
-  - "Paper 1" based on two-fold CV:
- 
-|        Model        | AP     | P@20   |
-|:-------------------:|:------:|:------:|
-|  Paper 1 (two fold) | 0.2971 | 0.3948 |
-| BM25+RM3 (Anserini) | 0.2987 | 0.3871 |         
-|     1S: BERT(QA)    | 0.3014 | 0.3928 |         
-|     2S: BERT(QA)    | 0.3003 | 0.3948 |         
-|     3S: BERT(QA)    | 0.3003 | 0.3948 |         
-|     1S: BERT(MB)    | 0.3241 | 0.4217 |         
-|     2S: BERT(MB)    | 0.3240 | 0.4209 |         
-|     3S: BERT(MB)    | **0.3244** | **0.4219** |   
- 
- - "Paper 2" based on five-fold CV:
- 
-|        Model        | AP     | P@20   |
-|:-------------------:|:------:|:------:|
-| Paper 2 (five fold) |  0.272 |  0.386 |
-| BM25+RM3 (Anserini) | 0.3033 | 0.3974 |         
-|     1S: BERT(QA)    | 0.3102 | 0.4068 |         
-|     2S: BERT(QA)    | 0.3090 | 0.4064 |         
-|     3S: BERT(QA)    | 0.3090 | 0.4064 |         
-|     1S: BERT(MB)    | 0.3266 | 0.4245 |         
-|     2S: BERT(MB)    | **0.3278** | 0.4267 |         
-|     3S: BERT(MB)    | **0.3278** | **0.4287** |         
- 
- See this [paper](https://dl.acm.org/citation.cfm?id=3308781) for the exact fold settings.
- 
-### Replication Log
-
-+ Results replicated by [@emmileaf](https://github.com/emmileaf) on 2019-06-10 (commit [`cc42b60`](https://github.com/castorini/birch/commit/cc42b60093090969c1d9b24cddd1257c1cad66df))
- 
- ---
-
-**How do I cite this work?**
-
-```
-@article{yang2019simple,
-  title={Simple Applications of BERT for Ad Hoc Document Retrieval},
-  author={Yang, Wei and Zhang, Haotian and Lin, Jimmy},
-  journal={arXiv preprint arXiv:1903.10972},
-  year={2019}
-}
+# Evaluate with trec_eval
+./eval_scripts/eval.sh #{experiment} ${anserini_path} ${data_path}
 ```
