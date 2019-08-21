@@ -4,6 +4,11 @@
  
 Document ranking via sentence modeling using BERT
 
+Note: 
+The results in the arXiv paper [Simple Applications of BERT for Ad Hoc Document Retrieval](https://arxiv.org/abs/1903.10972) have been superseded by the results in the EMNLP'19 paper [Cross-Domain Modeling of Sentence-Level Evidence
+for Document Retrieval].
+To reproduce the results in the arXiv paper, please follow the instructions [here](https://github.com/castorini/birch/blob/master/reproduce_arxiv.md) instead.
+
 ## Environment & Data
 
 ```
@@ -38,7 +43,6 @@ Experiment Names:
 - large_msmarco_mb_robust04, large_msmarco_mb_core17, large_msmarco_mb_core18
 - large_car_robust04, large_car_core17, large_car_core18
 - large_msmarco_robust04, large_msmarco_core17, large_msmarco_core18
-
 
 ## Training
 
