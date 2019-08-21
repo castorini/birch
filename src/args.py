@@ -6,7 +6,9 @@ def get_args():
     parser.add_argument('--mode', default='retrieval', help='[training, inference, retrieval]')
     parser.add_argument('--output_path', default='out.tmp', help='Name of log file')
     parser.add_argument('--data_path', default='data')
+    parser.add_argument('--anserini_path', default='../Anserini', help='Path to Anserini root')
     parser.add_argument('--collection', default='robust04', help='[mb, robust04, core17, core18]')
+    parser.add_argument('--trec_eval_path', default='eval/trec_eval.9.0.4/trec_eval')
 
     # Interactive
     parser.add_argument('--interactive', action='store_true', default=False, help='Batch evaluation if not set')
@@ -14,14 +16,12 @@ def get_args():
     parser.add_argument('--interactive_path', default='data/datasets/query_sents.csv', help='Path to output sentence results from query')
 
     # Retrieval
-    parser.add_argument('--experiment', default='base_mb_robust04', help='Experiment name for logging')
-    parser.add_argument('--anserini_path', default='../Anserini', help='Path to Anserini root')
+    parser.add_argument('--experiment', default=None, help='Experiment name for logging')
     parser.add_argument('--index_path', default='lucene-index.robust04.pos+docvectors+rawdocs', help='Path to Lucene index')
     parser.add_argument('--cv_fold', default=5)
 
     # Training
     parser.add_argument('--device', default='cpu', help='[cuda, cpu]')
-    parser.add_argument('--trec_eval_path', default='eval/trec_eval.9.0.4/trec_eval')
     parser.add_argument('--model_path', default='models/saved.tmp', help='Path to pretrained model')
     parser.add_argument('--predict_path', default='predict.tmp')
     parser.add_argument('--batch_size', default=16, type=int)
