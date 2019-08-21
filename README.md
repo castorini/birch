@@ -24,7 +24,7 @@ pip install -r requirements.txt
 git clone https://github.com/NVIDIA/apex
 cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
-# Set up Anserini
+# Set up Anserini (last reproduced with commit id: f690b5b769d7b0a623e034b31438df126d81b791)
 git clone https://github.com/castorini/anserini.git
 cd anserini && mvn clean package appassembler:assemble
 cd eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
