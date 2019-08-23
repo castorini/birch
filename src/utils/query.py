@@ -1,7 +1,11 @@
-from utils import *
-from searcher import *
-from args import get_args
+import os
+import sys
+src_dir = os.path.join(os.getcwd(), 'src')
+sys.path.append(src_dir)
 
+from utils.doc_utils import *
+from utils.searcher import *
+from args import get_args
 
 def query_sents(args):
     collection = args.collection

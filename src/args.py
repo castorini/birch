@@ -18,7 +18,6 @@ def get_args():
     # Retrieval
     parser.add_argument('--experiment', default=None, help='Experiment name for logging')
     parser.add_argument('--index_path', default='lucene-index.robust04.pos+docvectors+rawdocs', help='Path to Lucene index')
-    parser.add_argument('--cv_fold', default=5)
 
     # Training
     parser.add_argument('--device', default='cpu', help='[cuda, cpu]')

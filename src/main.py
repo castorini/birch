@@ -33,7 +33,7 @@ def main():
     elif args.mode == 'inference':
         test(args)
     else:
-        from query import query_sents, visualize_scores
+        from utils.query import query_sents, visualize_scores
 
         folds_path = os.path.join(args.data_path, 'folds', '{}-folds.json'.format(args.collection))
         qrels_path = os.path.join(args.data_path, 'qrels', 'qrels.{}.txt'.format(args.collection))
@@ -60,7 +60,7 @@ def main():
             sentid2text = query_sents(args)
             test(args)  # inference over each sentence
 
-        collection_path = os.path.join(datasets_path, '{}_{}cv.csv'.format(args.collection, args.cv_fold)) if not args.interactive else args.interactive_path
+        collection_path = os.path.join(datasets_path, '{}_sents.csv'.format(args.collection)) if not args.interactive else args.interactive_path
         predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment) if not args.interactive else os.path.join(args.data_path, 'predictions', args.predict_path)
 
         top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
