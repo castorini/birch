@@ -43,6 +43,7 @@ Experiment Names:
 - large_car_robust04, large_car_core17, large_car_core18
 - large_msmarco_robust04, large_msmarco_core17, large_msmarco_core18
 
+
 ## Training
 
 For BERT(MB):
@@ -94,6 +95,13 @@ nohup python -u src/main.py --mode inference --experiment ${experiment} --collec
 
 Note that this step takes a long time. 
 If you don't want to evaluate the pretrained models, you may skip to the next step and evaluate with our predictions under `data/predictions`.
+
+## Retrieve sentences from top candidate documents
+
+```
+python src/utils/split_docs.py --collection <robust04, core17, core18> \
+--index <path/to/index> --data_path data --anserini_path <path/to/anserini/root>
+```
 
 ## Evaluation
 
