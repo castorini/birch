@@ -21,6 +21,7 @@ source birch_env/bin/activate
 pip install Cython  # jnius dependency
 pip install -r requirements.txt
 
+# For inference, the Python-only apex build can also be used
 git clone https://github.com/NVIDIA/apex
 cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
@@ -54,7 +55,7 @@ nohup python -u src/main.py --mode training --experiment ${experiment} --collect
 --local_model models/bert-large-uncased.tar.gz \
 --local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
 --data_path data --predict_path data/predictions/predict.${experiment} \
---model_path models/saved.${experiment} --eval_steps 1000 --qrels_file qrels.microblog.txt \
+--model_path models/saved.${experiment} --eval_steps 1000 \
 --device cuda --output_path logs/out.${experiment} > logs/${experiment}.log 2>&1 &
 ```
 
@@ -66,7 +67,7 @@ nohup python -u src/main.py --mode training --experiment ${experiment} --collect
 --local_model <models/pytorch_msmarco.tar.gz, models/pytorch_car.tar.gz> \
 --local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
 --data_path data --predict_path data/predictions/predict.${experiment} \
---model_path models/saved.${experiment} --eval_steps 1000 --qrels_file qrels.microblog.txt \
+--model_path models/saved.${experiment} --eval_steps 1000 \
 --device cuda --output_path logs/out.${experiment} > logs/${experiment}.log 2>&1 &
 ```
 
