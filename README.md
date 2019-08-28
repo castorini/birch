@@ -25,14 +25,14 @@ pip install -r requirements.txt
 git clone https://github.com/NVIDIA/apex
 cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
-# Set up Anserini (last reproduced with commit id: f690b5b769d7b0a623e034b31438df126d81b791)
+# Set up Anserini (last reproduced with commit id: f690b5b769d7b0a623e034b31438df126d81b791) # TODO: update
 git clone https://github.com/castorini/anserini.git
 cd anserini && mvn clean package appassembler:assemble
 cd eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
 
 # Download data and models
 cd data
-wget https://zenodo.org/record/3372764/files/emnlp_bert4ir.tar.gz
+wget https://zenodo.org/record/3372764/files/emnlp_bert4ir.tar.gz  # TODO: update
 tar -xzvf emnlp_bert4ir.tar.gz
 cd ..
 ```
