@@ -29,8 +29,8 @@ do
             gamma=$(echo ${line#?} | cut -d" " -f3)
         done < "run_logs/${experiment}/${i}_best.txt"
 
-        python src/main.py --mode retrieval --experiment ${experiment} --collection ${collection} --anserini_path ${anserini_path} 3 ${alpha} ${beta} ${gamma} 0 all
-        mv runs/run.${experiment}.cv.all runs/run.${experiment}.cv.$i
+        python src/main.py --mode retrieval --experiment ${experiment} --collection ${collection} --anserini_path ${anserini_path} 3 ${alpha} ${beta} ${gamma} 0 test
+        mv runs/run.${experiment}.cv.test.0 runs/run.${experiment}.cv.$i
     fi
 done
 

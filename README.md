@@ -38,11 +38,11 @@ cd ..
 ```
 
 Experiment Names:
-- large_mb_robust04, large_mb_core17, large_mb_core18
-- large_car_mb_robust04, large_car_mb_core17, large_car_mb_core18
-- large_msmarco_mb_robust04, large_msmarco_mb_core17, large_msmarco_mb_core18
-- large_car_robust04, large_car_core17, large_car_core18
-- large_msmarco_robust04, large_msmarco_core17, large_msmarco_core18
+- mb_robust04, mb_core17, mb_core18
+- car_mb_robust04, car_mb_core17, car_mb_core18
+- msmarco_mb_robust04, msmarco_mb_core17, msmarco_mb_core18
+- robust04, car_core17, car_core18
+- msmarco_robust04, msmarco_core17, msmarco_core18
 
 
 ## Training
@@ -50,7 +50,7 @@ Experiment Names:
 For BERT(MB):
 
 ```
-export CUDA_VISIBLE_DEVICES=0; experiment=${experiment}; \
+export CUDA_VISIBLE_DEVICES=0; experiment=mb; \
 nohup python -u src/main.py --mode training --experiment ${experiment} --collection mb \
 --local_model models/bert-large-uncased.tar.gz \
 --local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
@@ -62,7 +62,7 @@ nohup python -u src/main.py --mode training --experiment ${experiment} --collect
 For BERT(CAR -> MB) and BERT(MS MARCO -> MB):
 
 ```
-export CUDA_VISIBLE_DEVICES=0; experiment=${experiment}; \
+export CUDA_VISIBLE_DEVICES=0; experiment=<car_mb, msmarco_mb>; \
 nohup python -u src/main.py --mode training --experiment ${experiment} --collection mb \
 --local_model <models/pytorch_msmarco.tar.gz, models/pytorch_car.tar.gz> \
 --local_tokenizer models/bert-large-uncased-vocab.txt --batch_size 16 \
@@ -78,7 +78,7 @@ For BERT(MB), BERT(CAR -> MB) and BERT(MS MARCO -> MB):
 ```
 export CUDA_VISIBLE_DEVICES=0; experiment=<experiment_name>; \
 nohup python -u src/main.py --mode inference --experiment ${experiment} --collection <robust04, core17, core18> \
---load_trained --model_path <models/saved.large_mb_2, models/saved.car_mb_1, models/saved.msmarco_mb_2> \
+--load_trained --model_path <models/saved.mb_1, models/saved.car_mb_1, models/saved.msmarco_mb_1> \
 --batch_size 4 --data_path data --predict_path data/predictions/predict.${experiment} \
 --device cuda --output_path logs/out.${experiment} > logs/${experiment}.log 2>&1 &
 ```
@@ -110,8 +110,21 @@ python src/utils/split_docs.py --collection <robust04, core17, core18> \
 experiment=<experiment_name>
 collection=<robust04, core17, core18>
 anserini_path=<path/to/anserini/root>
+index_path=<path/to/lucene/index>
 data_path=<path/to/data/root>
+```
 
+### Baselines
+
+```
+./eval_scripts/baseline.sh ${collection} ${index_path} ${anserini_path} ${data_path}
+
+./eval_scripts/eval.sh baseline ${collection} ${anserini_path} ${data_path}
+```
+
+### Main Runs
+
+```
 # Tune hyperparameters
 ./eval_scripts/train.sh ${experiment} ${collection} ${anserini_path}
 
