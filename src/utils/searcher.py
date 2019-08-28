@@ -2,18 +2,23 @@
 
 import os
 import json
+import re
 from utils.doc_utils import parse_doc_from_index, clean_html, tokenizer, MAX_INPUT_LENGTH, chunk_sent
 
+from nltk.corpus import stopwords
 import jnius_config
 import glob
 
 from io import open
 
+stop_words = set(stopwords.words('english'))
+
+
 class Searcher:
     def __init__(self, anserini_path):
         paths = glob.glob(os.path.join(anserini_path, 'target', 'anserini-*-fatjar.jar'))
         if not paths:
-            raise Exception("No matching jar file for Anserini found in target")
+            raise Exception('No matching jar file for Anserini found in target')
 
         latest = max(paths, key=os.path.getctime)
         jnius_config.set_classpath(latest)
@@ -29,7 +34,7 @@ class Searcher:
         self.didx = 1
 
     def build_searcher(self, k1=0.9, b=0.4, fb_terms=10, fb_docs=10, original_query_weight=0.5,
-        index_path="index/lucene-index.robust04.pos+docvectors+rawdocs", rm3=False):
+        index_path='index/lucene-index.robust04.pos+docvectors+rawdocs', rm3=False):
         searcher = self.JSearcher(self.JString(index_path))
         searcher.setBM25Similarity(k1, b)
         if not rm3:
@@ -38,13 +43,14 @@ class Searcher:
             searcher.setRM3Reranker(fb_terms, fb_docs, original_query_weight, False)
         return searcher
 
-    def search_document(self, searcher, qid2docid, qid2text, output_fn, collection='robust04', K=1000, topics=None):
-        with open(output_fn, 'w', encoding="utf-8") as out:
+    def search_document(self, searcher, qid2docid, qid2text, output_fn, collection='robust04', K=1000, topics=None, filter_exact_matches=False):
+        with open(output_fn, 'w', encoding='utf-8') as out, open(output_fn + '_pruned', 'w', encoding='utf-8') as out_pruned:
             if 'core' in collection:
                 # Robust04 provides CV topics
                 topics = qid2text
             for qid in topics:
                 text = qid2text[qid]
+                text_tokens = text.split()
                 hits = searcher.search(self.JString(text), K)
                 for i in range(len(hits)):
                     sim = hits[i].score
@@ -71,21 +77,45 @@ class Searcher:
                                 out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, seq, qid, sentno, qid, self.didx-1))
                                 out.flush()
                                 sentid += 1
+
+                                flag = False
+                                if filter_exact_matches:
+                                    for tok in text_tokens:
+                                        if tok not in stop_words and tok.lower() in seq.lower():
+                                            flag = True
+                                            break
+                                    if flag:
+                                        self.didx += 1
+                                        continue
+
+                                    out_pruned.write('{}\t{}\n'.format(qid, self.didx - 1))
+                                    out_pruned.flush()
+
                                 self.didx += 1
                         else:
                             sentno = docno + '_' + str(sentid)
-                            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, sent, qid, sentno, qid, self.didx-1))
+                            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(label, round(float(sim), 11), text, sent, qid, sentno, qid, self.didx - 1))
                             out.flush()
                             sentid += 1
+
+                            flag = False
+                            if filter_exact_matches:
+                                for tok in text_tokens:
+                                    if tok not in stop_words and tok.lower() in sent.lower():
+                                        flag = True
+                                        break
+                                if flag:
+                                    self.didx += 1
+                                    continue
+
+                                out_pruned.write('{}\t{}\n'.format(qid, self.didx - 1))
+                                out_pruned.flush()
+
                             self.didx += 1
                 self.qidx += 1
 
     def search_query(self, searcher, query, output_fn, collection='robust04', K=1000):
-        output_dir = os.path.dirname(output_fn)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
-        with open(output_fn, 'w', encoding="utf-8") as out:
+        with open(output_fn, 'w', encoding='utf-8') as out:
             sentid2text = {}
             hits = searcher.search(self.JString(query), K)
             for i in range(len(hits)):
@@ -112,14 +142,14 @@ class Searcher:
                             out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(0, round(float(sim), 16), query, seq, 0, sentno, 0, self.didx))
                             out.flush()
                             sentid += 1
+                            sentid2text[self.didx] = seq
                             self.didx += 1
-                            sentid2text[sentno] = seq
                     else:
                         sentno = docno + '_' + str(sentid)
                         out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(0, round(float(sim), 16), query, sent, 0, sentno, 0, self.didx))
                         out.flush()
                         sentid += 1
+                        sentid2text[self.didx] = sent
                         self.didx += 1
-                        sentid2text[sentno] = sent
 
-        return sentid2text
+        return sentid2text, hits
