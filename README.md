@@ -114,7 +114,7 @@ index_path=<path/to/lucene/index>
 data_path=<path/to/data/root>
 ```
 
-### Baselines
+### BM25+RM3 Baseline
 
 ```
 ./eval_scripts/baseline.sh ${collection} ${index_path} ${anserini_path} ${data_path}
@@ -122,7 +122,7 @@ data_path=<path/to/data/root>
 ./eval_scripts/eval.sh baseline ${collection} ${anserini_path} ${data_path}
 ```
 
-### Main Runs
+### Sentence Evidence
 
 ```
 # Tune hyperparameters
