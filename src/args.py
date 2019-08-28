@@ -13,7 +13,7 @@ def get_args():
     # Interactive
     parser.add_argument('--interactive', action='store_true', default=False, help='Batch evaluation if not set')
     parser.add_argument('--query', default='hubble space telescope', help='Query string')
-    parser.add_argument('--interactive_path', default='data/datasets/query_sents.csv', help='Path to output sentence results from query')
+    parser.add_argument('--interactive_name', default='query_sents', help='Name of output sentence results from query')
 
     # Retrieval
     parser.add_argument('--experiment', default=None, help='Experiment name for logging')
@@ -22,7 +22,7 @@ def get_args():
     # Training
     parser.add_argument('--device', default='cpu', help='[cuda, cpu]')
     parser.add_argument('--model_path', default='models/saved.tmp', help='Path to pretrained model')
-    parser.add_argument('--predict_path', default='predict.tmp')
+    parser.add_argument('--predict_path', default='data/predictions/predict.tmp')
     parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--learning_rate', default=1e-5, type=float)
     parser.add_argument('--num_train_epochs', default=3, type=int)

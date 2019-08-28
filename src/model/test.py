@@ -30,7 +30,7 @@ def test(args, split='test', model=None, test_dataset=None):
 
         assert test_dataset is None
         print('Loading {} set...'.format(split))
-        test_dataset = DataGenerator(args.data_path, '{}_sents'.format(args.collection), args.batch_size, tokenizer, split, args.device)
+        test_dataset = DataGenerator(args.data_path, '{}_sents'.format(args.collection) if not args.interactive else args.interactive_name, args.batch_size, tokenizer, split, args.device)
 
     model.eval()
     prediction_score_list, prediction_index_list, labels = [], [], []
@@ -82,6 +82,9 @@ def test(args, split='test', model=None, test_dataset=None):
     torch.cuda.empty_cache()
     model.train()
 
-    map, p20, ndcg20 = evaluate(args.trec_eval_path, predictions_file=args.predict_path, \
-                            qrels_file=os.path.join(args.data_path, 'qrels', 'qrels.{}.txt'.format(args.collection)))
-    return [['map', 'p20', 'ndcg20'], [map, p20, ndcg20]]
+    if split != 'test':
+        map, p20, ndcg20 = evaluate(args.trec_eval_path, predictions_file=args.predict_path, \
+                                qrels_file=os.path.join(args.data_path, 'qrels', 'qrels.{}.txt'.format(args.collection)))
+        return [['map', 'p20', 'ndcg20'], [map, p20, ndcg20]]
+    else:
+        return None

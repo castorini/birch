@@ -7,17 +7,19 @@ from utils.doc_utils import *
 from utils.searcher import *
 from args import get_args
 
-def query_sents(args):
+
+def query_sents(args, K=1000):
+    assert args.interactive is True
+
     collection = args.collection
     anserini_path = args.anserini_path
     index_path = args.index_path
     query = args.query
-    output_fn = args.interactive_path
+    output_fn = os.path.join(args.data_path, 'datasets', args.interactive_name + '.csv')
 
     docsearch = Searcher(anserini_path)
-    searcher = docsearch.build_searcher(k1=0.9, b=0.4, index_path=index_path,
-                                        rm3=True)
-    return docsearch.search_query(searcher, query, output_fn, collection, K=1000)
+    searcher = docsearch.build_searcher(k1=0.9, b=0.4, index_path=index_path, rm3=True)
+    return docsearch.search_query(searcher, query, output_fn, collection, K=K)
 
 
 def visualize_scores(collection_path, bert_scores):

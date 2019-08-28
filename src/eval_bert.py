@@ -47,7 +47,7 @@ def load_bert_scores(pred_file, query_dict, sent_dict):
 
 def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
                     topKSent, alpha, beta, gamma):
-    run_file = open(os.path.join('runs', run_file), "w")
+    run_file = open(os.path.join('runs', run_file), 'w')
     for q in topics:
         doc_score_dict = {}
         for d in top_doc_dict[q]:
@@ -64,7 +64,7 @@ def calc_q_doc_bert(score_dict, run_file, topics, top_doc_dict, bm25_dict,
         doc_score_dict = sorted(doc_score_dict.items(), key=operator.itemgetter(1), reverse=True)
         rank = 1
         for doc, score in doc_score_dict:
-            run_file.write("{} Q0 {} {} {} BERT\n".format(q, doc, rank, score))
+            run_file.write('{} Q0 {} {} {} BERT\n'.format(q, doc, rank, score))
             rank += 1
 
     run_file.close()
