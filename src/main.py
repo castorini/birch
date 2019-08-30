@@ -72,15 +72,10 @@ def main():
                 os.mkdir('runs')
 
             if mode == 'train':
-                if args.collection == 'robust04':
-                    topics = train_topics if not args.interactive else list(q_dict.keys())
-                else:
-                    topics = all_topics
-                # Grid search for best parameters
                 for a in np.arange(0.0, alpha, 0.1):
                     for b in np.arange(0.0, beta, 0.1):
                         for g in np.arange(0.0, gamma, 0.1):
-                            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.train', topics, top_doc_dict, doc_bm25_dict, topK, a, b, g)
+                            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.train', train_topics, top_doc_dict, doc_bm25_dict, topK, a, b, g)
                             base = 'runs/run.' + experiment + '.cv.train'
                             os.system('{}/eval/trec_eval.9.0.4/trec_eval -M1000 -m map {} {}> eval.base'.format(anserini_path, qrels_path, base))
                             with open('eval.base', 'r') as f:
@@ -90,11 +85,7 @@ def main():
                                     print(test_folder_set, round(a, 2), round(b, 2), round(g, 2), map_score)
 
             elif mode == 'test':
-                if args.collection == 'robust04':
-                    topics = test_topics if not args.interactive else list(q_dict.keys())
-                else:
-                    topics = all_topics
-                calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.test.' + str(test_folder_set), topics, top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
+                calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.test.' + str(test_folder_set), test_topics, top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
 
 if __name__ == '__main__':
