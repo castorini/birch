@@ -33,78 +33,60 @@ def main():
     elif args.mode == 'inference':
         test(args)
     else:
-        from query import query_sents, visualize_scores
-
-        folds_path = os.path.join(args.data_path, 'folds', '{}-folds.json'.format(args.collection))
-        qrels_path = os.path.join(args.data_path, 'qrels', 'qrels.{}.txt'.format(args.collection))
-
-        topK = int(other[0])
-        alpha = float(other[1])
-        beta = float(other[2])
-        gamma = float(other[3])
-        test_folder_set = int(other[4])
-        mode = other[5]
-
-        # Divide topics according to fold parameters
-        train_topics, test_topics, all_topics = [], [], []
-        with open(folds_path) as f:
-            folds = json.load(f)
-        for i in range(0, len(folds)):
-            all_topics.extend(folds[i])
-            if i != test_folder_set:
-                train_topics.extend(folds[i])
-            else:
-                test_topics.extend(folds[i])
-
         if args.interactive:
-            sentid2text = query_sents(args)
-            test(args)  # inference over each sentence
+            # TODO: sync with HiCAL
+            from utils.query import query_sents, visualize_scores
 
-        collection_path = os.path.join(datasets_path, '{}_{}cv.csv'.format(args.collection, args.cv_fold)) if not args.interactive else args.interactive_path
-        predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment) if not args.interactive else os.path.join(args.data_path, 'predictions', args.predict_path)
+            sentid2text, hits = query_sents(args, K=10)
+            test(args)
 
-        top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
-        score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
+        else:
+            folds_path = os.path.join(args.data_path, 'folds', '{}-folds.json'.format(args.collection))
+            qrels_path = os.path.join(args.data_path, 'qrels', 'qrels.{}.txt'.format(args.collection))
 
-        if args.interactive:
-            top_rank_docs = visualize_scores(collection_path, score_dict)
-            with open(os.path.join(args.data_path, 'query_sent_scores.csv'), 'w') as scores_file:
-                for doc in top_rank_docs[:100]:
-                    scores_file.write('{}\t{}\t{}\t{}\t{}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
-                for doc in top_rank_docs[-100:]:
-                    scores_file.write('{}\t{}\t{}\t{}\t{}\n'.format(doc[0], sentid2text[doc[0]], doc[1], doc[2], 'BM25' if doc[3] > 0 else 'BERT'))
+            topK = int(other[0])
+            alpha = float(other[1])
+            beta = float(other[2])
+            gamma = float(other[3])
+            test_folder_set = int(other[4])
+            mode = other[5]
 
-        if not os.path.isdir('runs'):
-            os.mkdir('runs')
+            # Divide topics according to fold parameters
+            train_topics, test_topics, all_topics = [], [], []
+            with open(folds_path) as f:
+                folds = json.load(f)
+            for i in range(0, len(folds)):
+                all_topics.extend(folds[i])
+                if i != test_folder_set:
+                    train_topics.extend(folds[i])
+                else:
+                    test_topics.extend(folds[i])
 
-        if mode == 'train':
-            if args.collection == 'robust04':
-                topics = train_topics if not args.interactive else list(q_dict.keys())
-            else:
-                topics = all_topics
-            # Grid search for best parameters
-            for a in np.arange(0.0, alpha, 0.1):
-                for b in np.arange(0.0, beta, 0.1):
-                    for g in np.arange(0.0, gamma, 0.1):
-                        calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.train',
-                                        topics, top_doc_dict, doc_bm25_dict,
-                                        topK, a, b, g)
-                        base = 'runs/run.' + experiment + '.cv.train'
-                        os.system('{}/eval/trec_eval.9.0.4/trec_eval -M1000 -m map {} {}> eval.base'.format(anserini_path, qrels_path, base))
-                        with open('eval.base', 'r') as f:
-                            for line in f:
-                                metric, qid, score = line.split('\t')
-                                map_score = float(score)
-                                print(test_folder_set, round(a, 2),
-                                        round(b, 2), round(g, 2), map_score)
+            collection_path = os.path.join(datasets_path, '{}_sents.csv'.format(args.collection))
+            predictions_path = os.path.join(args.data_path, 'predictions', 'predict.' + experiment)
 
-        elif mode == 'test':
-            topics = test_topics if not args.interactive else list(q_dict.keys())
-            calc_q_doc_bert(score_dict,
-                            'run.' + experiment + '.cv.test.' + str(test_folder_set),
-                            topics, top_doc_dict, doc_bm25_dict, topK, alpha,
-                            beta, gamma)
+            top_doc_dict, doc_bm25_dict, sent_dict, q_dict, doc_label_dict = eval_bm25(collection_path)
+            score_dict = load_bert_scores(predictions_path, q_dict, sent_dict)
+
+            if not os.path.isdir('runs'):
+                os.mkdir('runs')
+
+            if mode == 'train':
+                for a in np.arange(0.0, alpha, 0.1):
+                    for b in np.arange(0.0, beta, 0.1):
+                        for g in np.arange(0.0, gamma, 0.1):
+                            calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.train', train_topics, top_doc_dict, doc_bm25_dict, topK, a, b, g)
+                            base = 'runs/run.' + experiment + '.cv.train'
+                            os.system('{}/eval/trec_eval.9.0.4/trec_eval -M1000 -m map {} {}> eval.base'.format(anserini_path, qrels_path, base))
+                            with open('eval.base', 'r') as f:
+                                for line in f:
+                                    metric, qid, score = line.split('\t')
+                                    map_score = float(score)
+                                    print(test_folder_set, round(a, 2), round(b, 2), round(g, 2), map_score)
+
+            elif mode == 'test':
+                calc_q_doc_bert(score_dict, 'run.' + experiment + '.cv.test.' + str(test_folder_set), test_topics, top_doc_dict, doc_bm25_dict, topK, alpha, beta, gamma)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

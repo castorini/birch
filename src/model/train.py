@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from .test import *
-from .utils import init_optimizer, load_checkpoint, print_scores, load_pretrained_model_tokenizer
+from .utils import init_optimizer, load_checkpoint, load_pretrained_model_tokenizer
 from .data import *
 
 RANDOM_SEED = 12345
@@ -57,6 +57,3 @@ def train(args):
         print('[train] loss: {}'.format(tr_loss))
         best_score = eval_select(args, model, tokenizer, validate_dataset,
                                  args.model_path, best_score, epoch)
-
-    scores = test(args, split='test')
-    print_scores(scores)

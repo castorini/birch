@@ -53,13 +53,13 @@ If you don't want to evaluate the pretrained models, you may skip to the next st
 
 ## Evaluation
 
-### BM25+RM3:
+### BM25+RM3 Baseline
 
 ```
 ./eval_scripts/baseline.sh <path/to/anserini> <path/to/index> <2, 5>
 ```
 
-### Sentence Evidence:
+### Sentence Evidence
 
 - Compute document score
 
