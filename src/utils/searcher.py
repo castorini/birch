@@ -44,7 +44,7 @@ class Searcher:
         return searcher
 
     def search_document(self, searcher, qid2docid, qid2text, output_fn, collection='robust04', K=1000, topics=None, filter_exact_matches=False):
-        with open(output_fn, 'w', encoding='utf-8') as out, open(output_fn + '_pruned', 'w', encoding='utf-8') as out_pruned:
+        with open(output_fn, 'w', encoding='utf-8') as out, open('_pruned'.join(output_fn.split('.csv')) + '.csv', 'w', encoding='utf-8') as out_pruned:
             if 'core' in collection:
                 # Robust04 provides CV topics
                 topics = qid2text
@@ -88,7 +88,11 @@ class Searcher:
                                         self.didx += 1
                                         continue
 
-                                    out_pruned.write('{}\t{}\n'.format(qid, self.didx - 1))
+                                    out_pruned.write(
+                                        '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(
+                                            label, round(float(sim), 11), text,
+                                            seq, qid, sentno, qid,
+                                            self.didx - 1))
                                     out_pruned.flush()
 
                                 self.didx += 1
@@ -108,7 +112,10 @@ class Searcher:
                                     self.didx += 1
                                     continue
 
-                                out_pruned.write('{}\t{}\n'.format(qid, self.didx - 1))
+                                out_pruned.write(
+                                    '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(
+                                        label, round(float(sim), 11), text,
+                                        sent, qid, sentno, qid, self.didx - 1))
                                 out_pruned.flush()
 
                             self.didx += 1

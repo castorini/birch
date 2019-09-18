@@ -42,7 +42,7 @@ if __name__ == '__main__':
                                                 index_path=index_path, rm3=True)
             docsearch.search_document(searcher, qid2docid, qid2text,
                                       output_fn + str(folder_idx),
-                                      collection, 1000, topics)
+                                      collection, 1000, topics, filter_exact_matches=True)
 
             folder_idx += 1
 
@@ -55,4 +55,4 @@ if __name__ == '__main__':
 
     else:
         searcher = docsearch.build_searcher(k1=0.9, b=0.4, index_path=index_path, rm3=True)
-        docsearch.search_document(searcher, qid2docid, qid2text, output_fn, collection, K=1000)
+        docsearch.search_document(searcher, qid2docid, qid2text, output_fn, collection, K=1000, filter_exact_matches=True)

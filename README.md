@@ -24,7 +24,11 @@ pip install -r requirements.txt
 
 # For inference, the Python-only apex build can also be used
 git clone https://github.com/NVIDIA/apex
-cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+cd apex
+pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
+
+# If you won't do any training / inference, install the Python-only build instead:
+# pip install -v --no-cache-dir ./
 
 # Set up Anserini (last reproduced with commit id: f690b5b769d7b0a623e034b31438df126d81b791)
 git clone https://github.com/castorini/anserini.git
@@ -32,7 +36,6 @@ cd anserini && mvn clean package appassembler:assemble
 cd eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
 
 # Download data and models
-cd data
 wget https://zenodo.org/record/3381673/files/emnlp_bert4ir_v2.tar.gz
 tar -xzvf emnlp_bert4ir_v2.tar.gz
 cd ..
