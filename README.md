@@ -2,7 +2,6 @@
  
 [ ![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3381673.svg)](https://doi.org/10.5281/zenodo.3381673)
  
- 
 Document ranking via sentence modeling using BERT
 
 Note: 
@@ -26,16 +25,14 @@ pip install -r requirements.txt
 git clone https://github.com/NVIDIA/apex
 cd apex && pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
-# Set up Anserini (last reproduced with commit id: f690b5b769d7b0a623e034b31438df126d81b791)
+# Set up Anserini (last reproduced with commit id: 5da46f610435be6364700bc5a6144253ed3f3b59)
 git clone https://github.com/castorini/anserini.git
 cd anserini && mvn clean package appassembler:assemble
 cd eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
 
 # Download data and models
-cd data
 wget https://zenodo.org/record/3381673/files/emnlp_bert4ir_v2.tar.gz
 tar -xzvf emnlp_bert4ir_v2.tar.gz
-cd ..
 ```
 
 Experiment Names:
@@ -44,7 +41,6 @@ Experiment Names:
 - msmarco_mb_robust04, msmarco_mb_core17, msmarco_mb_core18
 - robust04, car_core17, car_core18
 - msmarco_robust04, msmarco_core17, msmarco_core18
-
 
 ## Training
 
@@ -126,12 +122,12 @@ data_path=<path/to/data/root>
 ### Sentence Evidence
 
 ```
-# Tune hyperparameters
+# Tune hyperparameters (if you do not have apex working, run this script with an additional "NOAPEX" param at the end)
 ./eval_scripts/train.sh ${experiment} ${collection} ${anserini_path}
 
 # Run experiment
-./eval_scripts/test.sh #{experiment} ${collection} ${anserini_path}
+./eval_scripts/test.sh ${experiment} ${collection} ${anserini_path}
 
 # Evaluate with trec_eval
-./eval_scripts/eval.sh #{experiment} ${anserini_path} ${data_path}
+./eval_scripts/eval.sh ${experiment} ${collection} ${anserini_path} ${data_path}
 ```
