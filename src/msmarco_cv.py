@@ -7,7 +7,6 @@ import os
 import gzip
 import csv
 
-# TODO: needs to work with both dev and test
 
 # Taken from the TREC DL MS MARCO document ranking script
 def getcontent(docid, f):
@@ -18,7 +17,7 @@ def getcontent(docid, f):
     f.seek(docoffset[docid])
     line = f.readline()
     assert line.startswith(docid + "\t"), \
-        f"Looking for {docid}, found {line}"
+        "Looking for {docid}, found {line}"
     return line.rstrip()
 
 
@@ -33,7 +32,7 @@ if __name__ == '__main__':
     retrieved = True
 
     qid2text = {}
-    with open(os.path.join(data_path, 'msmarco-test2019-queries.tsv', 'r')) as query_file:
+    with open(os.path.join(data_path, 'msmarco-test2019-queries.tsv'), 'r') as query_file:
         for line in query_file:
             qid, query = line.strip().split('\t')
             qid2text[qid] = query
@@ -45,7 +44,7 @@ if __name__ == '__main__':
     else:
         # In the corpus tsv, each docid occurs at offset docoffset[docid]
         docoffset = {}
-        with gzip.open(os.path.join(data_path, 'msmarco-docs-lookup.tsv.gz', 'rt'), encoding='utf8') as f:
+        with gzip.open(os.path.join(data_path, 'collection', 'msmarco-docs-lookup.tsv.gz'), 'rt') as f:
             tsvreader = csv.reader(f, delimiter="\t")
             for [docid, _, offset] in tsvreader:
                 docoffset[docid] = int(offset)
@@ -53,22 +52,18 @@ if __name__ == '__main__':
         qidx = 0
         didx = 1
         old_qid = -1
-        with open(os.path.join(data_path, 'runs', 'run.msmarco-doc.bm25-tuned+rm3.topics.msmarco-doc-expanded.test.txt', 'r')) as top100f, \
-            open(output_fn, 'w', encoding='utf-8') as out, open(open(os.path.join(data_path, 'msmarco-docs.tsv', encoding='utf8'))) as f:
+        with open(os.path.join(data_path, 'runs', 'run.msmarco-doc-expanded-original.bm25-default+rm3.topics.msmarco-doc.test.txt'), 'r') as top100f, \
+            open(output_fn, 'w', encoding='utf-8') as out, open(os.path.join(data_path, 'collection', 'msmarco-docs.tsv'), encoding='utf8') as f:
             for line in top100f:
                 qid, _, docid, rank, score, _ = line.strip().split(' ')
-                print(qid, docid)
                 if qid != old_qid:
                     qidx += 1
                     old_qid = qid
                 text = qid2text[qid]
                 content = getcontent(docid, f)
-                print(text)
-                print(content)
                 clean_content = clean_html(content, collection=collection)
                 tokenized_content = tokenizer.tokenize(clean_content)
                 sentid = 0
-                break
                 for sent in tokenized_content:
                     # Split sentence if it's longer than BERT's maximum input length
                     if len(sent.strip().split()) > MAX_INPUT_LENGTH:
