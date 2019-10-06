@@ -36,7 +36,7 @@ tar -xzvf birch_data.tar.gz
 python src/robust04_cv.py --anserini_path <path/to/anserini> --index_path <path/to/index> --cv_fold <2, 5>
 ```
 
-This step retrieves documents to depth 1000 for each query, and splits them into sentences to generate folds data. You may skip to the next step and and use the downloaded data under `data/datasets`.
+This step retrieves documents to depth 1000 for each query, and splits them into sentences to generate folds data. You may skip to the next step and use the downloaded data under `data/datasets`.
 
 ## Training
 
@@ -65,11 +65,11 @@ If you don't want to evaluate the pretrained models, you may skip to the next st
 
 - Compute document score
 
-Set the last argument to True if you want to tune the hyperparameters first.
-To use the default hyperparameters, set to False.
+Set the last argument to true if you want to tune the hyperparameters first.
+To use the default hyperparameters, set to false.
 
 ```
-./eval_scripts/test.sh <qa_2cv, mb_2cv, qa_5cv, mb_5cv> <2, 5> <path/to/anserini> <True, False>
+./eval_scripts/test.sh <qa_2cv, mb_2cv, qa_5cv, mb_5cv> <2, 5> <path/to/anserini> <true, false>
 ```
 
 - Evaluate with trec_eval
