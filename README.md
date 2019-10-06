@@ -114,8 +114,9 @@ To use the default hyperparameters, set to false.
 ### Replication Log
 
 + Results replicated by [@emmileaf](https://github.com/emmileaf) on 2019-06-10 (commit [`cc42b60`](https://github.com/castorini/birch/commit/cc42b60093090969c1d9b24cddd1257c1cad66df))
- 
- ---
++ Results replicated by [@infinitecold](https://github.com/infinitecold) on 2019-10-05 (commit [`77ac2e9`](https://github.com/castorini/birch/commit/77ac2e9f6811ceac14e1389cc2f36579c894aa08))
+
+---
 
 **How do I cite this work?**
 
