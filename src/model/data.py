@@ -28,7 +28,7 @@ class DataGenerator(object):
                                   b.replace('\n', ''), \
                                   ID.replace('\n', '')])
         elif 'msmarco' in data_name:
-            self.f = open(os.path.join(data_path, 'datasets', '{}_{}.tsv'.format(data_name, split)))
+            self.f = open(os.path.join(data_path, 'datasets', '{}_sents.csv'.format(data_name)))
 
             for l in self.f:
                 self.data.append(l.replace('\n', '').split('\t'))
