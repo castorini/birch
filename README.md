@@ -18,7 +18,8 @@ pip install Cython  # jnius dependency
 pip install -r requirements.txt
 
 git clone https://github.com/NVIDIA/apex
-cd apex && pip install -v --no-cache-dir . && cd ..
+cd apex
+pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
 # Set up Anserini
 git clone https://github.com/castorini/anserini.git
