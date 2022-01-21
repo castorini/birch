@@ -7,7 +7,7 @@ cycler==0.10.0
 decorator==4.4.0
 docutils==0.14
 idna==2.8
-ipython==7.6.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.15.1
 jmespath==0.9.4
