@@ -13,7 +13,7 @@ jedi==0.15.1
 jmespath==0.9.4
 kiwisolver==1.1.0
 nltk==3.4.5
-numpy==1.16.2
+numpy==1.22.0
 parso==0.5.1
 pexpect==4.7.0
 pickleshare==0.7.5
